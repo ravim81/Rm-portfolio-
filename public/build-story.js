@@ -311,7 +311,7 @@
   function reveal(item) {
     if (item.done) return;
     item.done = true;
-    const fromPreview = item.el.classList.contains('build-staging');
+    const fromPreview = false;
     item.el.classList.remove('build-pending','build-staging');
     item.el.classList.add('build-complete');
     // Only selected headings get individual glyph construction; ordinary copy
@@ -320,13 +320,9 @@
       ?.filter(entry => entry.item === item)
       .map(entry => entry.a) || agents;
     if (!compact && item.kind === 'text') beginKinetic(item.el, builders, performance.now());
-    // Keep the preview visible while it resolves to finished UI. The old
-    // clip-from-zero reveal made a half-built card disappear and flash back.
-    const frames = fromPreview ? [
-      {opacity:item.kind === 'project' || item.kind === 'comparison' ? .46 : .43,
-       filter:'grayscale(.22)',transform:'none'},
-      {opacity:1,filter:'none',transform:'none'}
-    ] : keyframes(item);
+    // A native-content reveal starts only after the blueprint has been drawn.
+    // No ghost copy, grayscale loading state or flash from an already-loaded card.
+    const frames = keyframes(item);
     const animation = item.el.animate(frames, {
       duration: timings.reveal,
       easing: 'cubic-bezier(.22,1,.36,1)',
@@ -394,15 +390,11 @@
     // object. Smaller pieces within ONE parent (e.g. a heading and its
     // description, or two detail rows) form a coherent supporting group.
     const primary = available[0];
-    const visual = ['project','image','comparison','form'].includes(kind(primary));
-    const sameParent = el => el.parentElement === primary.parentElement &&
-      !['project','image','comparison','form'].includes(kind(el));
-    const companions = visual ? [] : available.slice(1)
-      .filter(sameParent).slice(0,compact?1:2);
-    const selected = [primary,...companions];
-    // A faint preview shows the actual object about to be constructed.
-    // The viewer no longer stares at an empty screen with moving cursors.
-    selected.forEach(el=>el.classList.add('build-staging'));
+     // A single focal object per beat prevents unrelated tabs, labels and cards
+    // appearing while the pointer crew is still working elsewhere.
+    const selected = [primary];
+    // Never expose finished card content before the builders arrive.
+    // The blueprint/cursors establish the frame first, then native HTML reveals.
     const items = selected.map((el,i) => ({
       el,kind:kind(el),done:false,
       revealAt:timings.revealStart + i*timings.revealGap
@@ -441,7 +433,7 @@
       sx += a.x;
       sy += a.y;
     });
-    if (positions.length) illuminate(sx / positions.length, sy / positions.length, .43);
+    if (positions.length) illuminate(sx / positions.length, sy / positions.length, .20);
     stage.items.forEach((item,i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
     });
