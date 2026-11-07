@@ -195,3 +195,31 @@ body.agent-story-mode{background-color:#09090b}
     -webkit-text-fill-color:unset!important;
   }
 }
+
+
+/* Cross-device refinement — keep the portrait fully framed and wordmark on
+   one line at the narrowest supported phone widths. */
+@media (min-width:601px) and (max-width:900px) {
+  .hero .portrait {right:0;width:61%;}
+  .hero .portrait img {object-position:60% 40%;}
+}
+@media (max-width:600px) {
+  .hero .portrait {right:0;width:100%;}
+  .hero h1 {
+    font-size:clamp(84px,28vw,110px);
+    letter-spacing:-4px;
+    white-space:nowrap;
+  }
+  .hero-scroll {left:6%;top:880px;}
+  .build-controls {
+    padding-bottom:max(8px,env(safe-area-inset-bottom));
+    bottom:max(9px,env(safe-area-inset-bottom));
+  }
+  .contact-grid, .project-grid, .section-heading {min-width:0;}
+}
+@media (max-width:374px) {
+  .hero h2 {font-size:clamp(33px,10.5vw,43px);}
+  .hero-scroll {top:890px;}
+  .filters {gap:15px;}
+  .filters button {font-size:10px;}
+}
