@@ -264,23 +264,24 @@ async function motionPass(browser,label,device) {
     await page.screenshot({path:join(out,label+'-'+device.name+'-PROJECT.png'),
       fullPage:false,animations:'allow'});
 
-    // Manual user input must return usable HTML and clear artificial text hiding.
-    // The project card now occupies the middle of the viewport. Tapping
-    // there would OPEN its modal (correct app behavior) and intentionally hide
-    // the tour controls. Dispatch a touchstart directly to exercise the
-    // manual-takeover handler without activating an unrelated project button.
-    if(device.touch)await page.evaluate(()=>
-      window.dispatchEvent(new Event('touchstart',{bubbles:true})));
+    // Test a REAL mobile touch, not a synthetic event. Tap the neutral margin
+    // at the left edge so the project button is not activated at the same time.
+    // This reproduces the original takeover regression in Chromium/WebKit.
+    if(device.touch)await page.touchscreen.tap(8,Math.round(device.height*.71));
     else await page.mouse.wheel(0,350);
     await page.waitForTimeout(200);
     const manual=await page.evaluate(()=>({
       caption:document.querySelector('.build-caption')?.textContent,
       pending:document.querySelectorAll('.build-pending').length,
+      staged:document.querySelectorAll('.build-staging').length,
       hiddenLetters:document.querySelectorAll('.kinetic-source-hidden').length
     }));
     assert(!(await page.locator('#project-dialog').evaluate(el=>el.open)),
       'manual exploration unexpectedly opened a project dialog');
     assert(manual.pending===0,'manual takeover left content hidden');
+    assert(manual.staged===0,'manual takeover left dimmed blueprint previews');
+    assert(manual.caption==='EXPLORE AT YOUR PACE',
+      'manual takeover did not stop the cinematic tour');
     assert(manual.hiddenLetters===0,'manual takeover left glyphs hidden');
     assert(!errors.length,'page errors after takeover: '+errors.join(' | '));
     // The control bar must actually work, including after manual takeover.
