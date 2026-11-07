@@ -88,6 +88,42 @@ for(const spec of scenarios){
       before.activeCursors<=(spec.width<=640?6:10),
      scene.id+': wrong active crew size '+before.activeCursors);
    assert(before.otherProjects===0,scene.id+': unrelated project shows staging');
+   // Director 3.0 must visibly construct different geometry for each project.
+   // Cursor-to-blueprint proximity alone is NOT a valid construction illusion.
+   await page.waitForFunction(id=>{
+     const draft=document.querySelector('.director-draft');
+     return draft?.dataset.target===id && draft.dataset.state==='construct' &&
+       Number(draft.dataset.progress)>.55 && Number(draft.dataset.progress)<.96 &&
+       Number(getComputedStyle(draft).opacity)>.25;
+   },scene.id,{timeout:3500,polling:25});
+   const taskEvidence=await page.evaluate(()=>{
+     const draft=document.querySelector('.director-draft');
+     const rect=draft.getBoundingClientRect();
+     const paths=[...draft.querySelectorAll('path')];
+     const progressed=paths.filter(p=>Number(p.style.strokeDashoffset)<95);
+     const agents=[...document.querySelectorAll('.build-agent')]
+       .filter(a=>Number(getComputedStyle(a).opacity)>.18);
+     const connected=paths.slice(1).reduce((count,p)=>{
+       const length=p.getTotalLength();
+       if(!length || Number(p.style.strokeDashoffset)>=95)return count;
+       const fraction=1-Number(p.style.strokeDashoffset)/100;
+       const tip=p.getPointAtLength(length*fraction);
+       const x=rect.left+rect.width*tip.x, y=rect.top+rect.height*tip.y;
+       const near=agents.some(a=>{
+         const r=a.getBoundingClientRect();
+         return Math.hypot(r.left-x,r.top-y)<32;
+       });
+       return count+(near?1:0);
+     },0);
+     return {target:draft.dataset.target,state:draft.dataset.state,
+       progress:Number(draft.dataset.progress),tasks:Number(draft.dataset.tasks),
+       paths:paths.length,progressed:progressed.length,connected,
+       visible:Number(getComputedStyle(draft).opacity)};
+   });
+   assert(taskEvidence.paths===6 && taskEvidence.progressed>=3,
+     scene.id+': project-specific drawing not constructed '+JSON.stringify(taskEvidence));
+   assert(taskEvidence.connected>=2,
+     scene.id+': task cursors did not follow distinct drawing paths '+JSON.stringify(taskEvidence));
    await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-building.png'),animations:'allow'});
    await page.waitForFunction(selector=>document.querySelector(selector)?.classList.contains('build-complete'),
      scene.selector,{timeout:10000,polling:40});
@@ -102,7 +138,7 @@ for(const spec of scenarios){
    assert(after.complete && after.opacity>.8 && !!after.text,
      scene.id+': finished card did not become readable '+JSON.stringify(after));
    await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-revealed.png'),animations:'allow'});
-   result.scenes.push({id:scene.id,passed:true,before,after});
+   result.scenes.push({id:scene.id,passed:true,before,taskEvidence,after});
    console.log('CONSTRUCTION_SCENE',spec.name,scene.id,JSON.stringify({before,after}));
   }
   assert(result.errors.length===0,'page errors '+result.errors.join(' | '));
