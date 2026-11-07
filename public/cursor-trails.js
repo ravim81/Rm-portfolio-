@@ -11,9 +11,9 @@
     const mobile = width <= 640;
     const constrained = (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4);
     return {
-      maxPoints: mobile ? (constrained ? 8 : 12) : (constrained ? 14 : 23),
+      maxPoints: mobile ? (constrained ? 4 : 6) : (constrained ? 6 : 9),
       fps: (mobile || constrained) ? 30 : 60,
-      ttl: mobile ? 370 : (constrained ? 460 : 610),
+      ttl: mobile ? 150 : (constrained ? 170 : 220),
       dprCap: mobile ? 1.25 : (constrained ? 1.4 : 1.75)
     };
   }
@@ -60,7 +60,7 @@
     }
 
     function sample(now, agents, mode) {
-      const painting = mode === 'intro' || mode === 'working' || mode === 'camera';
+      const painting = mode === 'intro' || mode === 'working';
       if (!painting) return;
       const limit = Math.min(agents.length, tracks.length);
       for (let i = 0; i < limit; i++) {
@@ -94,7 +94,7 @@
 
       const first = points[0];
       const rgba = palette[index % palette.length];
-      const flight = mode === 'camera' ? .79 : mode === 'intro' ? .76 : 1;
+      const flight = mode === 'intro' ? .38 : .55;
       const strength = flight * Math.pow(freshness, 1.6);
 
       // Draw a curved ribbon with a wide low-alpha halo and a thin crisp core.
@@ -116,50 +116,34 @@
       ctx.strokeStyle = gradient;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.lineWidth = width <= 640 ? 4.3 : 5.8;
-      ctx.globalAlpha = .27;
+      ctx.lineWidth = width <= 640 ? 2.2 : 3.1;
+      ctx.globalAlpha = .17;
       ctx.stroke(path);
-      ctx.globalAlpha = .9;
-      ctx.lineWidth = width <= 640 ? .9 : 1.15;
+      ctx.globalAlpha = .67;
+      ctx.lineWidth = width <= 640 ? .75 : .9;
       ctx.stroke(path);
     }
 
+    // Deliberately avoid drawing a web between working cursors.
+    // Three delicate strokes at the INTRO are enough to communicate teams.
     function paintFormation(now, agents, mode) {
-      if (mode !== 'intro' && mode !== 'working') return;
-      // One low-opacity path connects each builder to its closest teammate.
-      // This evokes a drafting wireframe without a dense permanent web.
-      const length = Math.min(agents.length, tracks.length);
+      if (mode !== 'intro' || width <= 640) return;
       const path = new Path2D();
-      let edges = 0;
-      for (let i = 0; i < length; i++) {
-        const a = agents[i];
-        if (!a || Number.parseFloat(a.el?.style?.opacity || '0') < .4) continue;
-        const group = mode === 'intro' ? (i < 8 ? 0 : i < 16 ? 1 : 2) : a.formation;
-        if (!Number.isInteger(group) || group < 0) continue;
-        let nearest = null;
-        let nearestDistance = Infinity;
-        for (let j = i + 1; j < length; j++) {
-          const b = agents[j];
-          if (!b || Number.parseFloat(b.el?.style?.opacity || '0') < .4) continue;
-          const other = mode === 'intro' ? (j < 8 ? 0 : j < 16 ? 1 : 2) : b.formation;
-          if (other !== group) continue;
-          const distance = Math.hypot(a.x - b.x, a.y - b.y);
-          if (distance < nearestDistance) {nearest = b;nearestDistance = distance;}
-        }
-        if (nearest && nearestDistance < (width <= 640 ? 122 : 220) && nearestDistance > 18) {
-          path.moveTo(a.x, a.y);
-          path.lineTo(nearest.x, nearest.y);
-          edges++;
-        }
+      let links = 0;
+      for (const first of [0,8,16]) {
+        const a=agents[first], b=agents[first+2];
+        if(!a||!b||Number.parseFloat(a.el?.style?.opacity||'0')<.45)continue;
+        if(Math.hypot(a.x-b.x,a.y-b.y)>170)continue;
+        path.moveTo(a.x,a.y);
+        path.lineTo(b.x,b.y);
+        links++;
       }
-      if (!edges) return;
-      const pulse = .84 + .16 * Math.sin(now * .0028);
-      ctx.globalAlpha = mode === 'intro' ? .26 * pulse : .17 * pulse;
-      ctx.strokeStyle = 'rgba(255,129,148,.72)';
-      ctx.lineWidth = .65;
-      ctx.lineCap = 'round';
+      if (!links) return;
+      ctx.globalAlpha=.12;
+      ctx.strokeStyle='rgba(255,115,135,.6)';
+      ctx.lineWidth=.65;
       ctx.stroke(path);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha=1;
     }
 
     function draw(now, agents, mode = 'working') {
