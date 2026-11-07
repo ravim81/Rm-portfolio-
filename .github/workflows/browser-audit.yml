@@ -1,0 +1,38 @@
+name: Browser & device audit
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'public/**'
+      - 'scripts/browser-audit.mjs'
+      - '.github/workflows/browser-audit.yml'
+  pull_request:
+    paths:
+      - 'public/**'
+      - 'scripts/browser-audit.mjs'
+      - '.github/workflows/browser-audit.yml'
+permissions:
+  contents: read
+jobs:
+  cross-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runner
+        run: npm install --no-save playwright@1.56.1
+      - name: Install Chromium, Firefox, WebKit and system libraries
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run desktop, tablet and phone browser audit
+        run: node scripts/browser-audit.mjs
+      - name: Upload browser screenshots and audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-audit
+          path: test-results/browser-audit/
+          if-no-files-found: warn
+          retention-days: 7
