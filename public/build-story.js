@@ -12,9 +12,7 @@
   ];
   const palette = ['#ff536b','#f5ebe4','#78d8ff','#fc6680','#b8abff','#e8e1d7','#80eadb'];
   const timings = Object.freeze({
-    gather: 1080,
     approach: compact ? 610 : 560,
-    stagger: compact ? 9 : 12,
     revealStart: compact ? 835 : 880,
     revealGap: compact ? 110 : 130,
     reveal: compact ? 580 : 650,
@@ -22,9 +20,7 @@
     camera: compact ? 980 : 1160
   });
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-  const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
   const easeInOut = n => n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2;
-  const easeSoft = n => .5 - Math.cos(Math.PI * clamp(n, 0, 1)) / 2;
 
   // A single engine owns content visibility; app.js's generic scroll reveals are disabled.
   document.body.classList.remove('js-motion');
@@ -284,7 +280,9 @@
       timings.revealStart + (items.length - 1) * timings.revealGap + timings.reveal + 210};
     stageCount++;
     phase = 'working';
-    caption.textContent = 'ASSEMBLING / 23 AGENTS';
+    const project = items.find(item => item.kind === 'project');
+    const name = project?.el.querySelector('h3')?.textContent?.trim();
+    caption.textContent = name ? 'CONSTRUCTING / ' + name.toUpperCase() : 'ASSEMBLING / 23 AGENTS';
   }
   function showWork(now) {
     if (!stage) { chooseStage(now); return; }
@@ -300,14 +298,20 @@
       sy += a.y;
     });
     if (positions.length) illuminate(sx / positions.length, sy / positions.length, .43);
+    const guideLimit = swarm.budget(innerWidth, navigator.deviceMemory, navigator.hardwareConcurrency).guideLimit;
     stage.items.forEach((item, i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
       const box = guides[i];
-      const rect = layouts[i].rect;
-      if (!rect) return;
-      box.style.transform = 'translate3d(' + rect.left + 'px,' + rect.top + 'px,0)';
+      if (!box) return;
+      if (i >= guideLimit) {box.style.opacity = '0';return;}
+      const geometry = layouts[i];
+      const rect = item.kind === 'project' && geometry.artRect
+        ? geometry.artRect : geometry.rect;
+      box.dataset.kind = item.kind;
+      const y = item.kind === 'text' ? rect.bottom + 8 : rect.top;
+      box.style.transform = 'translate3d(' + rect.left + 'px,' + y + 'px,0)';
       box.style.width = rect.width + 'px';
-      box.style.height = rect.height + 'px';
+      box.style.height = item.kind === 'text' ? '2px' : rect.height + 'px';
       box.style.opacity = t > 490 && t < item.revealAt + 260 ? '.30' : '0';
     });
     if (t >= stage.duration) finishStage();
@@ -361,10 +365,7 @@
   function tick(now) {
     frame = 0;
     if (!enabled || document.hidden || !autoplay) return;
-    if (phase === 'intro') {
-      if (!autoplay) return; // Suspend the shared clock while the intro is paused.
-      showIntro(now);
-    }
+    if (phase === 'intro') showIntro(now);
     else if (phase === 'working') showWork(now);
     else if (phase === 'camera') showCamera(now);
     else if (phase === 'hold') {
