@@ -265,9 +265,12 @@ async function motionPass(browser,label,device) {
       fullPage:false,animations:'allow'});
 
     // Manual user input must return usable HTML and clear artificial text hiding.
-    // Mobile WebKit does not implement wheel events. Exercise a genuine touch
-    // on phones/tablets; desktop gets the standard wheel takeover.
-    if(device.touch)await page.touchscreen.tap(device.width-26,Math.round(device.height*.5));
+    // The project card now occupies the middle of the viewport. Tapping
+    // there would OPEN its modal (correct app behavior) and intentionally hide
+    // the tour controls. Dispatch a touchstart directly to exercise the
+    // manual-takeover handler without activating an unrelated project button.
+    if(device.touch)await page.evaluate(()=>
+      window.dispatchEvent(new Event('touchstart',{bubbles:true})));
     else await page.mouse.wheel(0,350);
     await page.waitForTimeout(200);
     const manual=await page.evaluate(()=>({
@@ -275,6 +278,8 @@ async function motionPass(browser,label,device) {
       pending:document.querySelectorAll('.build-pending').length,
       hiddenLetters:document.querySelectorAll('.kinetic-source-hidden').length
     }));
+    assert(!(await page.locator('#project-dialog').evaluate(el=>el.open)),
+      'manual exploration unexpectedly opened a project dialog');
     assert(manual.pending===0,'manual takeover left content hidden');
     assert(manual.hiddenLetters===0,'manual takeover left glyphs hidden');
     assert(!errors.length,'page errors after takeover: '+errors.join(' | '));
