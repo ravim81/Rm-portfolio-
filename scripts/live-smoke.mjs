@@ -82,6 +82,8 @@ for(const item of cases) {
      display:getComputedStyle(document.querySelector('#primary-nav')).display,
      menuVisible:getComputedStyle(document.querySelector('.menu-toggle')).display
    }));
+   console.log('LIVE_NAV',item.name,JSON.stringify({beforeMenu,afterMenu}));
+   await page.screenshot({path:'test-results/live-smoke/'+item.name+'-nav.png',fullPage:false});
    if(!(await page.locator('#primary-nav').isVisible()))
      throw Error('Mobile navigation failed '+JSON.stringify({beforeMenu,afterMenu,revision:header,errors}));
    await page.locator('#primary-nav a[href="#work"]').click();
