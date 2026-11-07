@@ -116,27 +116,62 @@
             y:clamp(y,31,Math.max(31,vp.height-68))};
   }
 
-  function separate(points, vp, config=budget(vp.width)) {
-    const gap=config.minGap;
-    const frame=points.map(p=>({...p}));
-    for(let iteration=0;iteration<config.passes;iteration++) {
-      for(let i=0;i<frame.length;i++) {
+  function separate(points, vp, config=budget(vp.width), avoidByIndex=[]) {
+    const gap=config.minGap, limit=points.length;
+    const frame=points.map((p,i)=>({
+      ...p,...avoidText(p,avoidByIndex[i],vp)
+    }));
+    const constrain=(p,i)=>{
+      const safe=avoidText(p,avoidByIndex[i],vp);
+      p.x=safe.x;p.y=safe.y;
+    };
+
+    // First, distribute small overlaps via two inexpensive symmetric pushes.
+    // A later greedy nearest-free search finishes persistent dense clusters.
+    for(let pass=0;pass<Math.min(config.passes,2);pass++) {
+      for(let i=0;i<limit;i++) {
         const a=frame[i];
-        for(let j=i+1;j<frame.length;j++) {
-          const b=frame[j];
-          const dx=b.x-a.x,dy=b.y-a.y;
-          const d=Math.hypot(dx,dy);
-          if(d>=gap)continue;
-          const n=d>.001?{x:dx/d,y:dy/d}
-            :{x:Math.cos((i+1)*2.399963+j),y:Math.sin((i+1)*2.399963+j)};
-          const push=(gap-d)*.52;
-          a.x-=n.x*push;a.y-=n.y*push;
-          b.x+=n.x*push;b.y+=n.y*push;
+        for(let j=i+1;j<limit;j++) {
+          const b=frame[j], dx=b.x-a.x,dy=b.y-a.y;
+          const distance=Math.hypot(dx,dy);
+          if(distance>=gap)continue;
+          const angle=(i*2.39996323+j*.61803398875);
+          const nx=distance>.01?dx/distance:Math.cos(angle);
+          const ny=distance>.01?dy/distance:Math.sin(angle);
+          const push=(gap-distance)*.53;
+          a.x-=nx*push;a.y-=ny*push;
+          b.x+=nx*push;b.y+=ny*push;
         }
       }
-      for(const p of frame) {
-        p.x=clamp(p.x,11,Math.max(11,vp.width-20));
-        p.y=clamp(p.y,31,Math.max(31,vp.height-68));
+      for(let i=0;i<limit;i++)constrain(frame[i],i);
+    }
+
+    // The 23 cursors can briefly share one anchor (e.g. during the opening).
+    // Deterministic nearest-available placement guarantees distinct screen
+    // positions where there is physical room, without doing physics every frame.
+    for(let i=0;i<limit;i++) {
+      const p=frame[i];
+      const separated=point=>{
+        for(let j=0;j<i;j++) {
+          if(Math.hypot(point.x-frame[j].x,point.y-frame[j].y)<gap-.4)return false;
+        }
+        return true;
+      };
+      if(separated(p))continue;
+      const base={x:p.x,y:p.y};
+      let fixed=false;
+      for(let ring=1;ring<=9&&!fixed;ring++) {
+        const radius=gap*(.48+.54*ring);
+        for(let angleIndex=0;angleIndex<12;angleIndex++) {
+          const angle=(angleIndex+(i%7)*.13)*TAU/12;
+          const candidate=avoidText({
+            x:base.x+Math.cos(angle)*radius,
+            y:base.y+Math.sin(angle)*radius
+          },avoidByIndex[i],vp);
+          if(separated(candidate)) {
+            p.x=candidate.x;p.y=candidate.y;fixed=true;break;
+          }
+        }
       }
     }
     return frame;
@@ -207,14 +242,8 @@
       const leaving=clamp((timings.duration-t)/260,0,1);
       return {x,y,opacity:(.35+.61*enter)*leaving};
     });
-    const separated=separate(positions,vp,budget(vp.width, vp.memory, vp.cores));
-    for(let i=0;i<separated.length;i++) {
-      const entry=assignments[i],item=items[entry.targetIndex];
-      const safe=avoidText(separated[i],item.avoidRects,vp);
-      separated[i].x=safe.x;
-      separated[i].y=safe.y;
-    }
-    return separated;
+    return separate(positions,vp,budget(vp.width, vp.memory, vp.cores),
+      assignments.map(entry=>items[entry.targetIndex].avoidRects));
   }
 
   function introFrame(agents,elapsed,vp) {
