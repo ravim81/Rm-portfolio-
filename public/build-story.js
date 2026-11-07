@@ -599,9 +599,16 @@
   controls.querySelector('.build-replay').addEventListener('click', replay);
   controls.querySelector('.build-manual').addEventListener('click', exploreFreely);
   pause.addEventListener('click', () => setAutoplay(!autoplay));
-  ['wheel','touchstart'].forEach(type => addEventListener(type, () => {
+  // Visitor interaction takes over autoplay, but cinematic controls must be
+  // excluded: mobile touchstart fires BEFORE their click event.
+  addEventListener('wheel', e => {
+    if (e.target?.closest?.('.build-controls')) return;
     if (enabled) exploreFreely();
-  }, {passive:true}));
+  }, {passive:true});
+  addEventListener('touchstart', e => {
+    if (e.target?.closest?.('.build-controls')) return;
+    if (enabled) exploreFreely();
+  }, {passive:true});
   addEventListener('keydown', e => {
     if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)) {
       if (enabled) exploreFreely();
