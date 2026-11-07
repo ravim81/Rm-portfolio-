@@ -69,7 +69,7 @@
  function create({layer}){
   const svg=make('svg',{class:'director-draft','aria-hidden':'true',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
   svg.style.cssText='position:absolute;left:0;top:0;pointer-events:none;overflow:visible;opacity:0;z-index:4';
-  const group=make('g',{'fill':'none','stroke':'#ff627f','stroke-width':'.44','stroke-linecap':'round','stroke-linejoin':'round'});
+  const group=make('g',{'fill':'none','stroke':'#ff627f','stroke-width':'.44','stroke-linecap':'round','stroke-linejoin':'round',transform:'scale(100)'});
   svg.append(group);layer.append(svg);
   const drawn=Array.from({length:6},(_,i)=>{
     const p=make('path',{'vector-effect':'non-scaling-stroke'});
@@ -86,7 +86,7 @@
     active={key,kind:item.kind,el:item.el};
     const library=paths[key]||paths.default;
     drawn.forEach((p,i)=>{
-      p.setAttribute('d',library[i].replace(/([\d.]+)/g,v=>v));
+      p.setAttribute('d',library[i]);
       p.style.strokeDasharray='1000';
       p.style.strokeDashoffset='1000';
     });
