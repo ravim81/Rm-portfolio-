@@ -324,26 +324,26 @@ body.agent-story-mode{background-color:#09090b}
    its cursor crew drafts the frame. This removes empty black construction
    scenes without displaying fully finished content prematurely. */
 .agent-story-mode .build-pending.build-staging {
-  opacity:.24!important;
-  filter:grayscale(.45) brightness(.82);
+  opacity:.41!important;
+  filter:grayscale(.32) brightness(.96);
   pointer-events:none!important;
   will-change:opacity;
 }
 .agent-story-mode .project.build-pending.build-staging,
 .agent-story-mode .comparison.build-pending.build-staging {
-  opacity:.34!important;
-  filter:grayscale(.55) brightness(.74);
+  opacity:.46!important;
+  filter:grayscale(.42) brightness(.89);
 }
 .agent-story-mode .section-heading.build-pending.build-staging,
 .agent-story-mode .about-title.build-pending.build-staging {
-  opacity:.28!important;
-  filter:grayscale(.25);
+  opacity:.49!important;
+  filter:grayscale(.14);
 }
 @media(max-width:640px) {
-  .agent-story-mode .build-pending.build-staging {opacity:.31!important;}
+  .agent-story-mode .build-pending.build-staging {opacity:.46!important;}
   .agent-story-mode .project.build-pending.build-staging,
   .agent-story-mode .comparison.build-pending.build-staging {
-    opacity:.42!important;
+    opacity:.51!important;
   }
 }
 /* The completed object is always crisp, not permanently dimmed. */
