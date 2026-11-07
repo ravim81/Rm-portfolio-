@@ -364,15 +364,16 @@
       if (autoplay) startCamera(now);
       return;
     }
-    // One coherent object at a time. On wide screens group just two adjacent
-    // short copy blocks; projects and visual sections always get a solo scene.
+    // Storyboard scenes: a project, image or comparison is the sole focal
+    // object. Smaller pieces within ONE parent (e.g. a heading and its
+    // description, or two detail rows) form a coherent supporting group.
     const primary = available[0];
-    const next = available[1];
-    const groupCopy = !compact && next && kind(primary) === 'text' &&
-      kind(next) === 'text' &&
-      primary.getBoundingClientRect().height < 100 &&
-      next.getBoundingClientRect().height < 100;
-    const selected = groupCopy ? [primary,next] : [primary];
+    const visual = ['project','image','comparison','form'].includes(kind(primary));
+    const sameParent = el => el.parentElement === primary.parentElement &&
+      !['project','image','comparison','form'].includes(kind(el));
+    const companions = visual ? [] : available.slice(1)
+      .filter(sameParent).slice(0,compact?1:2);
+    const selected = [primary,...companions];
     const items = selected.map((el,i) => ({
       el,kind:kind(el),done:false,
       revealAt:timings.revealStart + i*timings.revealGap
@@ -454,6 +455,9 @@
     phase = 'camera';
     caption.textContent = 'MOVING THROUGH THE STORY';
     document.documentElement.classList.add('agent-camera-moving');
+    agents.forEach(a=>a.el.style.opacity='0');
+    cursorTrails?.clear();
+    restoreKinetic();
     clearGuides();
   }
   function showCamera(now) {
@@ -464,9 +468,7 @@
     // The camera belongs to the work. Don't cover completed content with
     // traveling arrows or ribbons while the visitor is trying to read.
     agents.forEach(a => a.el.style.opacity = '0');
-    cursorTrails?.clear();
-    restoreKinetic();
-    illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .15);
+    illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .11);
     if (t >= 1) {
       camera = null;
       document.documentElement.classList.remove('agent-camera-moving');
