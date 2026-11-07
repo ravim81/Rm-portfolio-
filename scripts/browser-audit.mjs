@@ -220,12 +220,22 @@ async function motionPass(browser,label,device) {
       const activeAgents=[...document.querySelectorAll('.build-agent')]
         .filter(el=>Number(getComputedStyle(el).opacity)>.18).length;
       const label=scaffold.querySelector('.blueprint-index')?.textContent||'';
+      const staged=document.querySelector('.build-staging');
+      const rect=staged?.getBoundingClientRect();
       return {scaffoldOpacity:Number(getComputedStyle(scaffold).opacity),
         activeAgents,label,hiddenText:document.querySelectorAll('.kinetic-source-hidden').length,
-        totalAgents:document.querySelectorAll('.build-agent').length};
+        totalAgents:document.querySelectorAll('.build-agent').length,
+        staged:!!staged,stageOpacity:staged?Number(getComputedStyle(staged).opacity):0,
+        stageTop:rect?.top,stageBottom:rect?.bottom,
+        viewportHeight:innerHeight};
     });
     assert(direction.label.includes('FRAME') || direction.label.includes('PLAN'),
       'scaffold is not explaining its construction phase');
+    assert(direction.staged && direction.stageOpacity>=.12,
+      'empty-stage regression: no visible preview of the object being built');
+    assert(direction.stageTop<direction.viewportHeight*.47 &&
+      direction.stageBottom>direction.viewportHeight*.17,
+      'stage framed outside the readable viewport: '+JSON.stringify(direction));
     assert(direction.activeAgents<= (device.width<=640?6:10),
       'too many agents obscure the content: '+direction.activeAgents);
     if(device.width<=640)
