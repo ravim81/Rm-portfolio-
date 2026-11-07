@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const story = await readFile(new URL('../public/build-story.js',import.meta.url),'utf8');
 const swarm = await readFile(new URL('../public/swarm-formation.js',import.meta.url),'utf8');
 
-function createRuntime({width=1200,reduced=false}={}) {
+function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=false}={}) {
   const events={},controls={},queue=[];
   for(const key of ['.build-caption','.build-pause','.build-replay','.build-manual']) {
     controls[key]={textContent:'',disabled:false,style:{},setAttribute() {},
@@ -41,7 +41,8 @@ function createRuntime({width=1200,reduced=false}={}) {
       matches(selector){
         return type==='project'&&selector.includes('.project') ||
           type==='portrait'&&selector.includes('.portrait') ||
-          type==='h1'&&selector.includes('h1');
+          type==='h1'&&selector.includes('h1') ||
+          type==='h2'&&selector.includes('h2');
       },
       setAttribute() {},append() {},addEventListener() {},
       animate() {
@@ -55,9 +56,10 @@ function createRuntime({width=1200,reduced=false}={}) {
     return item;
   }
   const h1=element('h1',{left:100,top:170,width:480,height:170},true);
+  const h2=kinetic ? element('h2',{left:90,top:365,width:550,height:210},true) : null;
   const portrait=element('portrait',{left:640,top:90,width:440,height:550},true);
   const project=element('project',{left:60,top:270,width:450,height:350});
-  const targets=[h1,portrait,project];
+  const targets=kinetic?[h1,h2,portrait,project]:[h1,portrait,project];
   const document={
     hidden:false,
     body:{classList:{add(){},remove(){}},append(){}},
@@ -68,6 +70,17 @@ function createRuntime({width=1200,reduced=false}={}) {
     addEventListener:(type,cb)=>{events['document:'+type]=cb;}
   };
   const window={};
+  const kineticStats={starts:[],draws:0,clears:0,shifts:[]};
+  if(kinetic)window.createPortfolioKineticTypography=()=>({
+    start(el,builders,now){
+      if(kineticThrows)throw Error('Simulated renderer failure');
+      kineticStats.starts.push({el,builders:builders.length,now});
+      return true;
+    },
+    draw(){kineticStats.draws++},
+    clear(){kineticStats.clears++},
+    shiftTime(delta){kineticStats.shifts.push(delta)}
+  });
   runInNewContext(swarm,{window,Math,Number,Set});
   let time=0;
   const env={
@@ -90,7 +103,7 @@ function createRuntime({width=1200,reduced=false}={}) {
       if(cb)cb(time);
     }
   }
-  return {advance,events,controls,targets,queue};
+  return {advance,events,controls,targets,queue,kineticStats};
 }
 
 test('the real entrypoint runs beyond the FIRST frame and reveals the hero',()=>{
@@ -125,4 +138,42 @@ test('reduced-motion visitors always see the complete content',()=>{
   const app=createRuntime({reduced:true});
   assert.ok(app.targets.every(x=>x.classList.contains('build-complete')));
   assert.equal(app.controls['.build-replay'].disabled,true);
+});
+
+
+test('kinetic typography begins during hero handoff and shares the existing clock',()=>{
+  for(const width of [390,1200]){
+    const app=createRuntime({width,kinetic:true});
+    app.advance(0,4900);
+    assert.ok(app.kineticStats.starts.some(x=>x.el===app.targets[1]),
+      'hero h2 must be assembled, not skipped: '+width);
+    assert.ok(app.kineticStats.draws>20,'letters use the existing frame clock');
+    assert.ok(app.targets[0].classList.contains('build-complete'));
+    assert.ok(app.targets[1].classList.contains('build-complete'));
+  }
+});
+
+test('kinetic pause, resume, replay and manual exploration remain functional',()=>{
+  const app=createRuntime({kinetic:true});
+  app.advance(0,2450);
+  const before=app.kineticStats.draws;
+  app.events['.build-pause:click']();
+  app.advance(2500,3600);
+  assert.equal(app.kineticStats.draws,before,'pausing must freeze glyph drawing');
+  app.events['.build-pause:click']();
+  assert.ok(app.kineticStats.shifts.some(ms=>ms>0),'resume must adjust glyph clock');
+  app.advance(3650,4900);
+  assert.ok(app.kineticStats.draws>before);
+  app.events['.build-replay:click']();
+  assert.ok(app.kineticStats.clears>=1,'replay restores original headline');
+  app.events['.build-manual:click']();
+  assert.ok(app.targets.every(x=>x.classList.contains('build-complete')));
+});
+
+test('renderer failure cannot stop the animation story',()=>{
+  const app=createRuntime({kinetic:true,kineticThrows:true});
+  app.advance(0,6100);
+  assert.ok(app.targets.every(x=>x.classList.contains('build-complete')),
+    'the portfolio remains usable when kinetic construction throws');
+  assert.ok(app.kineticStats.clears>0,'failure clears transient overlay');
 });
