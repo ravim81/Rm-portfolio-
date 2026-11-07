@@ -237,3 +237,84 @@ body.agent-story-mode{background-color:#09090b}
   .hero .button {min-height:44px;}
   .logo {display:inline-flex;align-items:center;min-height:44px;}
 }
+
+
+/* Director 2.0 — ONE object being assembled, with visible scaffolding.
+   Focused construction replaces the previously distracting cursor web. */
+.build-blueprint{
+  position:absolute;left:0;top:0;
+  z-index:4;pointer-events:none;opacity:0;
+  border:1px solid rgba(246,106,129,.53);
+  background:linear-gradient(145deg,rgba(249,53,82,.025),transparent 58%);
+  box-shadow:inset 0 0 0 1px rgba(250,70,92,.025);
+  will-change:transform,opacity;
+  transition:opacity .12s linear;
+}
+.blueprint-index{
+  position:absolute;left:0;top:-28px;
+  max-width:min(76vw,320px);
+  padding:5px 9px 5px 0;
+  font:700 10px/1.25 Arial,Helvetica,sans-serif;
+  letter-spacing:1.1px;
+  color:#f9c5cb;
+  white-space:nowrap;
+  text-shadow:0 1px 7px rgba(0,0,0,.9);
+}
+.blueprint-corner{
+  position:absolute;display:block;width:13px;height:13px;
+  border-color:#ff5873;border-style:solid;
+  filter:drop-shadow(0 0 5px rgba(246,75,106,.4));
+}
+.blueprint-corner.tl{top:-2px;left:-2px;border-width:2px 0 0 2px}
+.blueprint-corner.tr{top:-2px;right:-2px;border-width:2px 2px 0 0}
+.blueprint-corner.bl{bottom:-2px;left:-2px;border-width:0 0 2px 2px}
+.blueprint-corner.br{bottom:-2px;right:-2px;border-width:0 2px 2px 0}
+.blueprint-track{
+  position:absolute;left:0;bottom:-2px;width:100%;height:2px;
+  background:rgba(252,93,112,.18);overflow:hidden;
+}
+.blueprint-track i{
+  display:block;width:100%;height:100%;
+  background:linear-gradient(90deg,#fc516b,#ffd2d4);
+  transform-origin:left;
+  box-shadow:0 0 12px rgba(255,82,107,.6);
+  will-change:transform;
+}
+.build-blueprint[data-kind="text"]{
+  border-top:0;border-left:0;border-right:0;
+  background:none;box-shadow:none;
+}
+.build-blueprint[data-kind="text"] .blueprint-corner{display:none}
+.build-blueprint[data-kind="text"] .blueprint-index{top:-23px}
+.build-blueprint[data-kind="rows"]{
+  border-color:rgba(230,220,223,.3);
+  background:none;
+}
+.build-blueprint[data-kind="form"]{border-style:dashed}
+.build-blueprint[data-kind="comparison"]{border-color:rgba(255,93,115,.7)}
+@media(max-width:640px){
+  .blueprint-index{font-size:9px;letter-spacing:.65px;top:-23px;max-width:85vw}
+  .blueprint-corner{width:10px;height:10px}
+  .build-blueprint{box-shadow:none}
+  .build-controls{
+    display:grid;
+    grid-template-columns:repeat(3,auto);
+    column-gap:12px;row-gap:3px;
+    padding:8px 15px max(9px,env(safe-area-inset-bottom));
+    border-radius:13px;
+    justify-content:center;
+    width:max-content;max-width:calc(100vw - 18px)
+  }
+  .build-controls .build-indicator{display:none}
+  .build-caption{
+    grid-column:1/-1;min-width:0;
+    text-align:center;white-space:normal;
+    font:700 9px/1.25 Arial,Helvetica,sans-serif;
+    letter-spacing:1px;color:#f3dde0;
+  }
+  .build-controls button{
+    font-size:10px;min-height:32px;
+    padding:5px 4px;
+  }
+  .build-controls button+button{padding-left:7px}
+}
