@@ -135,3 +135,32 @@ body.agent-story-mode{background-color:#09090b}
 @media (prefers-reduced-motion: reduce) {
   .cursor-trails-canvas { display: none !important; }
 }
+
+
+/* Motion III — content-aware drafting language. Keep typography unobstructed. */
+.build-selection[data-kind="text"] {
+  border: 0;
+  border-bottom: 1px solid rgba(255, 105, 131, .78);
+  background: none;
+  box-shadow: none;
+}
+.build-selection[data-kind="text"] i {display:none;}
+.build-selection[data-kind="image"] {
+  border-style: dashed;
+  border-color: rgba(249, 209, 215, .48);
+  background: transparent;
+}
+.build-selection[data-kind="comparison"] {
+  border-color: rgba(255, 116, 139, .55);
+  background: linear-gradient(90deg, rgba(245, 55, 82, .018), transparent 60%);
+}
+.build-selection[data-kind="form"] {
+  border-style: dashed;
+  border-color: rgba(226, 226, 229, .36);
+  background: transparent;
+}
+@media (max-width: 640px) {
+  .build-selection[data-kind="image"],
+  .build-selection[data-kind="comparison"],
+  .build-selection[data-kind="form"] {box-shadow:none;}
+}
