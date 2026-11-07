@@ -91,7 +91,10 @@ test('collaborating cursors briefly connect into a subtle shared wireframe',()=>
   const {sandbox,layer,events}=browser();
   const engine=sandbox.window.createPortfolioCursorTrails({layer,agentCount:23});
   const agents=cursors();
-  agents.forEach((a,i)=>{a.formation=Math.floor(i/8);});
+  agents.forEach((a,i)=>{a.formation=Math.floor(i/8);
+    a.x=90+(i%8)*17+Math.floor(i/8)*270;
+    a.y=120+(i%8)*11;
+  });
   engine.draw(0,agents,'intro');
   agents.forEach(a=>{a.x+=8;a.y+=3;});
   engine.draw(30,agents,'intro');
