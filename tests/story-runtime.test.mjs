@@ -179,3 +179,19 @@ test('renderer failure cannot stop the animation story',()=>{
     'the portfolio remains usable when kinetic construction throws');
   assert.ok(app.kineticStats.clears>0,'failure clears transient overlay');
 });
+
+
+test('mobile control touchstart does not cancel its own replay or pause action',()=>{
+  const app=createRuntime({width:390});
+  app.advance(0,1000);
+  const toolbar={closest(selector){return selector==='.build-controls'?{}:null;}};
+  app.events.touchstart({target:toolbar});
+  assert.notEqual(app.controls['.build-caption'].textContent,'EXPLORE AT YOUR PACE');
+  app.events['.build-pause:click']();
+  assert.equal(app.controls['.build-caption'].textContent,'TOUR PAUSED');
+  app.events['.build-pause:click']();
+  app.events['.build-replay:click']();
+  assert.equal(app.controls['.build-caption'].textContent,'AUTOPLAY / 23 AGENTS');
+  app.events.touchstart({target:{closest(){return null;}}});
+  assert.equal(app.controls['.build-caption'].textContent,'EXPLORE AT YOUR PACE');
+});
