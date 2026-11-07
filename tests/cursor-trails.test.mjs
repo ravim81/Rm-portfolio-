@@ -92,9 +92,9 @@ test('collaborating cursors briefly connect into a subtle shared wireframe',()=>
   const engine=sandbox.window.createPortfolioCursorTrails({layer,agentCount:23});
   const agents=cursors();
   agents.forEach((a,i)=>{a.formation=Math.floor(i/8);});
-  engine.draw(0,agents,'working');
+  engine.draw(0,agents,'intro');
   agents.forEach(a=>{a.x+=8;a.y+=3;});
-  engine.draw(30,agents,'working');
+  engine.draw(30,agents,'intro');
   const wires=events.paths.filter(path=>path.steps.filter(p=>p[0]==='M').length>1);
   assert.ok(wires.length>0,'a grouped wireframe path joins several agents');
   engine.clear();
@@ -108,13 +108,13 @@ test('mobile and low-power devices get smaller, less expensive trails',()=>{
   const {sandbox}=browser();
   const budget=sandbox.window.portfolioCursorTrailBudget;
   assert.deepEqual(JSON.parse(JSON.stringify(budget(390,2,4))),
-    {maxPoints:8,fps:30,ttl:370,dprCap:1.25});
+    {maxPoints:4,fps:30,ttl:150,dprCap:1.25});
   assert.deepEqual(JSON.parse(JSON.stringify(budget(390,8,8))),
-    {maxPoints:12,fps:30,ttl:370,dprCap:1.25});
+    {maxPoints:6,fps:30,ttl:150,dprCap:1.25});
   assert.deepEqual(JSON.parse(JSON.stringify(budget(1280,2,4))),
-    {maxPoints:14,fps:30,ttl:460,dprCap:1.4});
+    {maxPoints:6,fps:30,ttl:170,dprCap:1.4});
   assert.deepEqual(JSON.parse(JSON.stringify(budget(1280,8,8))),
-    {maxPoints:23,fps:60,ttl:610,dprCap:1.75});
+    {maxPoints:9,fps:60,ttl:220,dprCap:1.75});
 });
 
 test('resizing and jumping do not connect stale cursor positions',()=>{
