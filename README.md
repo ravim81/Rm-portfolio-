@@ -7,6 +7,25 @@ Source repository for Ravi M's portfolio and Cloudflare Workers preview.
 - Automatic 23-agent cursor tour with choreographed cursor-first reveals, short readable pauses, smooth camera travel, replay, pause, manual exploration, project dialogs, filters, and comparison slider. Accessibility includes keyboard interruption and reduced-motion mode.
 - Originally imported from ChatGPT Sites source commit `553c716f95e6cd1e2ad700c490fc8cf5e65b8a83`; subsequently upgraded in GitHub with cinematic 23-agent orchestration.
 
+## Particle-to-reality opening
+
+The 23-agent opening is implemented in `public/particle-intro.js` and controlled by the
+shared animation clock in `public/build-story.js`. A Canvas 2D wordmark mask forms
+`RAVI M.` with off-white and red particles; agents converge in groups of 8 / 8 / 7.
+The particle wordmark transitions toward the existing DOM hero, which becomes
+the real, accessible content. No image or canvas text substitutes for semantic HTML.
+
+- Nominal introduction: about 3.1 seconds before the normal tour continues.
+- Responsive quality budgets: 360–600 particles on mobile and 850–1650 on desktop,
+  based on viewport width and approximate device capability.
+- Scroll, touch, keyboard navigation and interactive clicks interrupt the introduction
+  and immediately restore the normal document.
+- Pause freezes the intro clock; Resume continues where it stopped; Replay rebuilds it.
+- Reduced-motion settings, deep links, restored scroll positions and unavailable Canvas
+  gracefully skip the particle effect.
+- `npm run check` includes a mocked Canvas rendering test, quality-budget checks,
+  source integration assertions and existing Worker tests.
+
 ## Development
 
 Use Node 22 or newer. No npm dependencies are required.
