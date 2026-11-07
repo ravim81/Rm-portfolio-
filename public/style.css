@@ -398,3 +398,58 @@ body.agent-story-mode{background-color:#09090b}
 @media(prefers-reduced-motion:reduce) {
   .director-draft,.director-task-label {display:none!important;}
 }
+
+
+/* Mobile opening 3.1: the hero itself is the first piece of content.
+   No dust wordmark, 1030px dead-zone, or disappearing name on small phones. */
+@media (max-width:600px) {
+  .agent-story-mode .hero {
+    min-height:max(750px,100svh);
+    height:auto;
+    max-height:none;
+    overflow:hidden;
+  }
+  .agent-story-mode .hero-copy {
+    padding-top:clamp(102px,16svh,140px);
+    padding-bottom:380px;
+    position:relative;
+    z-index:3;
+  }
+  .agent-story-mode .hero h1 {
+    font-size:clamp(77px,25.8vw,105px);
+    letter-spacing:-3.8px;
+    line-height:.89;
+    margin:17px 0 18px;
+    white-space:nowrap;
+  }
+  .agent-story-mode .hero h2 {
+    font-size:clamp(37px,10vw,45px);
+    line-height:.98;
+  }
+  .agent-story-mode .hero .intro {max-width:285px;}
+  .agent-story-mode .portrait {
+    top:auto;
+    bottom:34px;
+    right:0;
+    width:100%;
+    height:min(49svh,390px);
+  }
+  .agent-story-mode .portrait img {
+    object-fit:contain;
+    object-position:center bottom;
+    mask-image:linear-gradient(0deg,#000 62%,transparent 100%);
+    -webkit-mask-image:linear-gradient(0deg,#000 62%,transparent 100%);
+  }
+  .agent-story-mode .hero-scroll {
+    top:auto;
+    bottom:76px;
+    margin:0;
+  }
+  .agent-story-mode .hero-bottom {bottom:15px;}
+  .agent-story-mode .particle-intro-canvas {display:none!important;}
+  .agent-story-mode .cursor-trails-canvas {opacity:0;}
+  .agent-story-mode .build-controls {
+    bottom:max(12px,env(safe-area-inset-bottom));
+    background:rgba(15,15,19,.94);
+  }
+}
