@@ -20,6 +20,7 @@
     camera: compact ? 980 : 1160
   });
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
   const easeInOut = n => n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2;
 
   // A single engine owns content visibility; app.js's generic scroll reveals are disabled.
