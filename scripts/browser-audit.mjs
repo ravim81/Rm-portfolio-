@@ -243,6 +243,27 @@ async function motionPass(browser,label,device) {
     await page.screenshot({path:join(out,label+'-'+device.name+'-STORY.png'),
       fullPage:false,animations:'allow'});
 
+    // A distinctive project card must actually get its own focused chapter.
+    // This catches a passing but meaningless headline-only animation tour.
+    await page.waitForFunction(()=>{
+      const label=document.querySelector('.blueprint-index')?.textContent||'';
+      return label.includes('CHEMLABS') &&
+        Number(getComputedStyle(document.querySelector('.build-blueprint')).opacity)>.2;
+    },null,{timeout:24000});
+    const projectFocus=await page.evaluate(()=>{
+      const el=document.querySelector('.project[data-project="chem"]');
+      const rect=el?.getBoundingClientRect();
+      return {top:rect?.top,bottom:rect?.bottom,
+        height:innerHeight,
+        staged:el?.classList.contains('build-staging'),
+        scene:document.querySelector('.blueprint-index')?.textContent};
+    });
+    assert(projectFocus.top<projectFocus.height*.5 &&
+      projectFocus.bottom>projectFocus.height*.2,
+      'project construction happens off-screen: '+JSON.stringify(projectFocus));
+    await page.screenshot({path:join(out,label+'-'+device.name+'-PROJECT.png'),
+      fullPage:false,animations:'allow'});
+
     // Manual user input must return usable HTML and clear artificial text hiding.
     // Mobile WebKit does not implement wheel events. Exercise a genuine touch
     // on phones/tablets; desktop gets the standard wheel takeover.
