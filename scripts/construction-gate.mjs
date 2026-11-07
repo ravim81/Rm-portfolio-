@@ -100,13 +100,13 @@ for(const spec of scenarios){
      const draft=document.querySelector('.director-draft');
      const rect=draft.getBoundingClientRect();
      const paths=[...draft.querySelectorAll('path')];
-     const progressed=paths.filter(p=>Number(p.style.strokeDashoffset)<95);
+     const progressed=paths.filter(p=>Number(p.getAttribute('stroke-dashoffset'))<95);
      const agents=[...document.querySelectorAll('.build-agent')]
        .filter(a=>Number(getComputedStyle(a).opacity)>.18);
      const connected=paths.slice(1).reduce((count,p)=>{
        try {
          const length=p.getTotalLength();
-         const remaining=Number(p.style.strokeDashoffset);
+         const remaining=Number(p.getAttribute('stroke-dashoffset'));
          if(!Number.isFinite(length)||length<=0||
             !Number.isFinite(remaining)||remaining>=95)return count;
          const fraction=Math.max(0,Math.min(1,1-remaining/100));
