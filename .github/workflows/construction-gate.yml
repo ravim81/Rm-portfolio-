@@ -1,0 +1,38 @@
+name: Cursor construction visual gate
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'public/**'
+      - 'scripts/construction-gate.mjs'
+      - '.github/workflows/construction-gate.yml'
+  pull_request:
+    paths:
+      - 'public/**'
+      - 'scripts/construction-gate.mjs'
+      - '.github/workflows/construction-gate.yml'
+permissions:
+  contents: read
+jobs:
+  construction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser runner
+        run: npm install --no-save playwright@1.56.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify live construction against all four project cards
+        run: node scripts/construction-gate.mjs
+      - name: Upload each scene before and after reveal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cursor-construction-scene-evidence
+          path: test-results/construction-gate/
+          retention-days: 7
+          if-no-files-found: warn
