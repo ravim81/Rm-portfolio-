@@ -1,0 +1,34 @@
+name: Published portfolio full browser matrix
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/live-matrix.yml'
+      - 'scripts/browser-audit.mjs'
+permissions:
+  contents: read
+jobs:
+  public-worker-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser and accessibility dependencies
+        run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
+      - name: Install Chromium, Firefox, WebKit
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Audit live Cloudflare Worker across 12 viewports and 3 browser engines
+        env:
+          PORTFOLIO_URL: https://rm-portfolio-preview.mallaravikumar9618.workers.dev/
+        run: node scripts/browser-audit.mjs
+      - name: Upload published-site screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-portfolio-browser-matrix
+          path: test-results/browser-audit/
+          if-no-files-found: warn
+          retention-days: 7
