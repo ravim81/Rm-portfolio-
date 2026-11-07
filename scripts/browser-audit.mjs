@@ -32,8 +32,12 @@ const devices=[
   {name:'small-mobile',width:320,height:640,touch:true},
   {name:'android-mobile',width:390,height:844,touch:true},
   {name:'large-mobile',width:430,height:932,touch:true},
+  {name:'foldable-mobile',width:540,height:720,touch:true},
+  {name:'landscape-phone',width:844,height:390,touch:true},
+  {name:'compact-tablet',width:700,height:1024,touch:true},
   {name:'tablet-portrait',width:820,height:1180,touch:true},
   {name:'tablet-landscape',width:1024,height:768,touch:true},
+  {name:'phone-desktop-mode',width:980,height:600,touch:true,desktopMode:true},
   {name:'laptop',width:1280,height:800,touch:false},
   {name:'desktop',width:1440,height:900,touch:false},
   {name:'large-desktop',width:1920,height:1080,touch:false}
@@ -57,7 +61,7 @@ async function contextFor(browser,label,device,reducedMotion='reduce'){
     viewport:{width:device.width,height:device.height},
     deviceScaleFactor:1,
     hasTouch:mobile,
-    isMobile:mobile && label!=='Firefox',
+    isMobile:mobile && !device.desktopMode && label!=='Firefox',
     reducedMotion,
     acceptDownloads:true,
     locale:'en-IN'
@@ -148,6 +152,12 @@ async function layoutPass(browser,label,device) {
     assert((await page.locator('#dialog-title').textContent()).includes('ChemLabs'),'dialog title wrong');
     await page.locator('.dialog-close').click();
     assert(!await page.locator('#project-dialog').evaluate(el=>el.open),'project dialog did not close');
+    await page.locator('.project[data-project="reframe"]').click();
+    await page.keyboard.press('Escape');
+    assert(!await page.locator('#project-dialog').evaluate(el=>el.open),'Escape did not close project dialog');
+    await page.locator('.cap-list details').nth(1).locator('summary').click();
+    assert(await page.locator('.cap-list details').nth(1).evaluate(el=>el.open),
+      'accordion detail did not expand');
 
     await page.locator('.comparison-stage input').evaluate(el=>{
       el.value='83';el.dispatchEvent(new Event('input',{bubbles:true}));
@@ -213,7 +223,28 @@ async function motionPass(browser,label,device) {
     assert(manual.pending===0,'manual takeover left content hidden');
     assert(manual.hiddenLetters===0,'manual takeover left glyphs hidden');
     assert(!errors.length,'page errors after takeover: '+errors.join(' | '));
-    record(label,device.name,'motion',{pass:true,early,active,manual});
+    // The control bar must actually work, including after manual takeover.
+    await page.locator('.build-replay').click();
+    await page.waitForTimeout(450);
+    assert((await page.locator('.build-caption').textContent()).includes('ASSEMBLING') ||
+      (await page.locator('.build-caption').textContent()).includes('BUILDING'),
+      'replay did not restart the construction sequence');
+    await page.locator('.build-pause').click();
+    assert(await page.locator('.build-pause').getAttribute('aria-pressed')==='true',
+      'Pause control did not set pressed state');
+    const pausedY=await page.evaluate(()=>window.scrollY);
+    await page.waitForTimeout(450);
+    assert(Math.abs(await page.evaluate(()=>window.scrollY)-pausedY)<=2,
+      'paused portfolio continued scrolling');
+    await page.locator('.build-pause').click();
+    assert(await page.locator('.build-pause').getAttribute('aria-pressed')==='false',
+      'Resume control did not reset pressed state');
+    await page.waitForTimeout(250);
+    await page.locator('.build-manual').click();
+    assert(await page.locator('.build-pending').count()===0,
+      'Explore freely left hidden content after replay');
+    assert(!errors.length,'page errors after controls: '+errors.join(' | '));
+    record(label,device.name,'motion',{pass:true,early,active,manual,controlsVerified:true});
   } catch(e) {
     const failure=label+'/'+device.name+' motion: '+String(e.message||e).slice(0,550);
     report.failures.push(failure);record(label,device.name,'motion',{pass:false,error:failure});
