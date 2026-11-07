@@ -259,9 +259,19 @@ try{
     catch(e){report.failures.push(label+' did not launch: '+e.message);continue;}
     console.log('### browser',label,browser.version());
     for(const device of devices) await layoutPass(browser,label,device);
-    for(const device of devices.filter(d=>['android-mobile','tablet-portrait','desktop'].includes(d.name)))
-      await motionPass(browser,label,device);
     await browser.close();
+    // Long full-page screenshot suites can exhaust WebKit's graphics process.
+    // Each motion scenario gets a clean browser process to distinguish real
+    // application crashes from test-runner process/memory accumulation.
+    for(const device of devices.filter(d=>['android-mobile','tablet-portrait','desktop'].includes(d.name))) {
+      let motionBrowser;
+      try {
+        motionBrowser=await engine.launch({headless:true,timeout:45000});
+        await motionPass(motionBrowser,label,device);
+      } catch(e) {
+        report.failures.push(label+'/'+device.name+' motion browser launch: '+String(e.message||e).slice(0,350));
+      } finally {await motionBrowser?.close().catch(()=>{});}
+    }
   }
 } finally {
   await writeFile(join(out,'report.json'),JSON.stringify({...report,finishedAt:new Date().toISOString()},null,2));
