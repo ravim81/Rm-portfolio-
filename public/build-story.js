@@ -616,7 +616,9 @@
     pause.setAttribute('aria-pressed', 'false');
     caption.textContent = 'AUTOPLAY / 23 AGENTS';
     targets.forEach(el => {
-      el.classList.remove('build-complete');
+      // Replay begins from an entirely clean visual state. A pre-existing
+      // preview must not remain faintly visible behind the rebuilt intro.
+      el.classList.remove('build-complete','build-staging');
       el.classList.add('build-pending');
     });
     scrollTo({top:0,behavior:'instant'});
