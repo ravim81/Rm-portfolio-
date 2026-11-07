@@ -223,3 +223,17 @@ body.agent-story-mode{background-color:#09090b}
   .filters {gap:15px;}
   .filters button {font-size:10px;}
 }
+
+
+/* Keyboard, native-control, and touch UX consistent across browser engines. */
+:root {color-scheme:dark;}
+.comparison-stage:focus-within {
+  outline:2px solid #ff6079;
+  outline-offset:4px;
+}
+@media (max-width:600px) {
+  .menu-toggle {min-width:48px;min-height:44px;}
+  .build-controls button {min-height:30px;padding-top:7px;padding-bottom:7px;}
+  .hero .button {min-height:44px;}
+  .logo {display:inline-flex;align-items:center;min-height:44px;}
+}
