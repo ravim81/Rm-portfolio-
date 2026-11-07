@@ -252,11 +252,14 @@
     const copy = item.kind === 'project'
       ? item.el.querySelector('.project-info')?.getBoundingClientRect()
       : null;
+    const artworkTitle = item.kind === 'project'
+      ? item.el.querySelector('.art-title')?.getBoundingClientRect()
+      : null;
     return {
       kind: item.kind,
       rect,
       artRect: art || null,
-      avoidRects: copy ? [copy] : []
+      avoidRects: [copy, artworkTitle].filter(Boolean)
     };
   }
   function chooseStage(now) {
