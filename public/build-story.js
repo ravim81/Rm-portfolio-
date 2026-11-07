@@ -727,6 +727,7 @@
       if (frame) cancelAnimationFrame(frame);
       frame=0;autoplay=false;enabled=true;
       particleIntro?.end();introAvailable=false;introHandoff=true;
+      const loader=document.querySelector('.loader');if(loader)loader.style.display='none';
       cursorTrails?.clear();restoreKinetic();sceneDirector?.clear();
       animations.forEach(a=>{try{a.cancel()}catch{}});
       animations=[];camera=null;stage=null;
