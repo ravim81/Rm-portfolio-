@@ -87,6 +87,15 @@
   const swarm = !reduceMotion && window.createPortfolioSwarm
     ? window.createPortfolioSwarm({count: agents.length})
     : null;
+  // Kinetic lettering shares this controller's frame clock and stays optional:
+  // a missing Canvas or browser API must never block the portfolio.
+  const kinetic = !reduceMotion && window.createPortfolioKineticTypography
+    ? (() => {
+        try { return window.createPortfolioKineticTypography({layer, agents}); }
+        catch { return null; }
+      })()
+    : null;
+  let kineticDisabled = false;
   let introAvailable = false;
   let introHandoff = false;
   let introPausedAt = 0;
@@ -126,6 +135,29 @@
   function clearGuides() {
     guides.forEach(box => { box.style.opacity = '0'; });
   }
+  function restoreKinetic() {
+    try { kinetic?.clear(); } catch {}
+    document.querySelectorAll('.kinetic-source-hidden').forEach(el => {
+      el.classList.remove('kinetic-source-hidden');
+    });
+  }
+  function beginKinetic(container, builders, now) {
+    if (!kinetic || kineticDisabled) return false;
+    try { return kinetic.start(container, builders, now); }
+    catch {
+      kineticDisabled = true;
+      restoreKinetic();
+      return false;
+    }
+  }
+  function drawKinetic(now) {
+    if (!kinetic || kineticDisabled) return;
+    try { kinetic.draw(now); }
+    catch {
+      kineticDisabled = true;
+      restoreKinetic();
+    }
+  }
   // The wordmark first exists as luminous particles. As it travels into the
   // exact hero heading position, the real HTML fades into place underneath.
   function handoffHero(animated = true) {
@@ -134,6 +166,8 @@
     heroNodes.forEach((el, i) => {
       revealImmediately(el);
       if (!animated) return;
+      // The hero h1 is built by particles; h2 is drafted letter by letter.
+      if (el.matches('h2') && beginKinetic(el, agents, performance.now())) return;
       const portrait = el.matches('.portrait');
       const heading = el.matches('h1');
       const frames = portrait
@@ -218,6 +252,12 @@
     item.done = true;
     item.el.classList.remove('build-pending');
     item.el.classList.add('build-complete');
+    // Only selected headings get individual glyph construction; ordinary copy
+    // and interactive cards preserve their existing reveal and hover behavior.
+    const builders = stage?.assignments
+      ?.filter(entry => entry.item === item)
+      .map(entry => entry.a) || agents;
+    beginKinetic(item.el, builders, performance.now());
     const animation = item.el.animate(keyframes(item), {
       duration: timings.reveal,
       easing: 'cubic-bezier(.22,1,.36,1)',
@@ -377,6 +417,7 @@
       if (now >= holdUntil) chooseStage(now);
     } else if (phase === 'idle' && autoplay) chooseStage(now);
     cursorTrails?.draw(now, agents, phase);
+    drawKinetic(now);
     if (['intro','working','camera','hold'].includes(phase) || (phase === 'idle' && autoplay)) schedule();
   }
   function schedule() {
@@ -409,6 +450,7 @@
         camera.start += delta;
       }
       pausedAt = 0;
+      try { kinetic?.shiftTime(delta); } catch { restoreKinetic(); }
       animations.forEach(animation => {
         try { if (animation.playState === 'paused') animation.play(); } catch {}
       });
@@ -423,6 +465,7 @@
     }
   }
   function exploreFreely() {
+    restoreKinetic();
     cursorTrails?.clear();
     particleIntro?.end();
     introAvailable = false;
@@ -444,6 +487,7 @@
   }
   function replay() {
     if (reduceMotion) return;
+    restoreKinetic();
     cursorTrails?.clear();
     animations.forEach(a => { try { a.cancel(); } catch {} });
     animations = [];
@@ -533,6 +577,7 @@
           const paused = Math.max(0, performance.now() - introPausedAt);
           introStart += paused;
           particleIntro?.shiftTime(paused);
+          try { kinetic?.shiftTime(paused); } catch {restoreKinetic();}
           introPausedAt = 0;
         }
         if (autoplay) schedule();
