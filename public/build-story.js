@@ -798,7 +798,10 @@
   // The independent watchdog can safely release the page on animation errors.
   window.__portfolioStoryRecover = exploreFreely;
   targets.forEach(el => {
-    if (enabled) el.classList.add('build-pending');
+    // Mobile first paint must never depend on a scheduled animation frame.
+    // The readable hero is live immediately; only subsequent chapters are
+    // withheld for agent-led construction. This also protects slow WebKit.
+    if (enabled && !(compact && el.closest('.hero'))) el.classList.add('build-pending');
     else revealImmediately(el);
   });
   controls.querySelector('.build-replay').addEventListener('click', replay);
