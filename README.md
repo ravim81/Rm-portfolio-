@@ -98,6 +98,39 @@ nodes, natural line wrapping, and accent spans remain untouched.
   mobile limits, pause/resume, replay, failed rendering, and the complete
   story's progression beyond the opening animation.
 
+## Scene director 2.0 — readable construction, not a cursor swarm
+
+The 2026-11-07 phone-screen recording exposed a *visual storytelling*
+problem even though layout and functional browser checks were green:
+unrelated cursors drifted over finished content, long trails made a tangled
+web, Canvas-drawn headings looked fragmented on phones, and rapid mixed
+reveals did not communicate what was being assembled.
+
+The portfolio now has a purposeful construction language:
+
+- **One clear focal object:** each project card, major image, form or comparison
+  is built as its own scene. Small related text/rows can build together.
+- **23 agents in the opening, focused crews afterwards:** only 4–6 agents work
+  in each phone scene and 7–10 on desktop, with other agents quietly hidden
+  between tasks. The crew rotates so the full set participates across the tour.
+- **Visible drafting action:** a project-specific scaffold uses bright corner
+  marks, a progressing build line and short PLAN → FRAME → REVEAL stages
+  before the actual content becomes readable.
+- **Natural finished work:** arrows and trails disappear for the camera move,
+  with a deliberate readable hold after each scene.
+- **Clean original typography on phones:** Canvas glyph copies no longer compete
+  with mobile headings. The semantic, correctly wrapped HTML heading is
+  revealed using its natural browser fonts.
+- **Quiet traces:** 150–220 ms, fewer segments, muted red/silver agents, no
+  distracting web of lines across finished project text.
+- **Camera lands on content:** guided motion aims for the next unrevealed block
+  rather than jumping a fixed arbitrary distance.
+
+The browser audit checks that the scaffold really appears and the active crew
+stays within the mobile/desktop budget; screenshot reports include story scenes
+for visual review. Design review is still necessary because functional tests
+cannot prove that animation storytelling feels coherent to a person.
+
 ## Cross-browser quality gate
 
 Automated browser coverage uses Playwright in Chromium, Firefox and WebKit
