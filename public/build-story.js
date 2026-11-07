@@ -12,12 +12,12 @@
   ];
   const palette = ['#ff536b','#f5ebe4','#78d8ff','#fc6680','#b8abff','#e8e1d7','#80eadb'];
   const timings = Object.freeze({
-    approach: compact ? 610 : 560,
-    revealStart: compact ? 835 : 880,
-    revealGap: compact ? 110 : 130,
-    reveal: compact ? 580 : 650,
-    linger: compact ? 920 : 1140,
-    camera: compact ? 980 : 1160
+    approach: compact ? 710 : 690,
+    revealStart: compact ? 1060 : 1120,
+    revealGap: compact ? 170 : 180,
+    reveal: compact ? 630 : 680,
+    linger: compact ? 1070 : 1170,
+    camera: compact ? 990 : 1100
   });
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
@@ -74,6 +74,18 @@
     layer.append(box);
     return box;
   });
+  // A single visible construction scaffold makes each cursor movement legible.
+  // Unlike 7 independent guide frames, it only surrounds the object being built.
+  const blueprint = document.createElement('div');
+  blueprint.className = 'build-blueprint';
+  blueprint.setAttribute('aria-hidden','true');
+  blueprint.innerHTML = '<span class="blueprint-index">01 / CONSTRUCT</span>' +
+    '<i class="blueprint-corner tl"></i><i class="blueprint-corner tr"></i>' +
+    '<i class="blueprint-corner bl"></i><i class="blueprint-corner br"></i>' +
+    '<span class="blueprint-track"><i></i></span>';
+  layer.append(blueprint);
+  const blueprintLabel = blueprint.querySelector('.blueprint-index');
+  const blueprintTrack = blueprint.querySelector('.blueprint-track i');
   const caption = controls.querySelector('.build-caption');
   const pause = controls.querySelector('.build-pause');
   let introStart = performance.now();
@@ -134,6 +146,42 @@
   }
   function clearGuides() {
     guides.forEach(box => { box.style.opacity = '0'; });
+    blueprint.style.opacity = '0';
+  }
+  const sceneNames = {
+    chem:'CONSTRUCTING / A VIRTUAL LAB',
+    reframe:'REFRAMING / BEFORE TO AFTER',
+    brand:'DIRECTING / A PRODUCT FILM',
+    discovery:'MAPPING / USEFUL DISCOVERY'
+  };
+  function sceneLabel(item) {
+    const project = item.el.dataset?.project;
+    if (project && sceneNames[project]) return sceneNames[project];
+    if (item.kind === 'comparison') return 'BUILDING / A BETTER INTERFACE';
+    if (item.kind === 'image') return 'FRAMING / THE COMPOSITION';
+    if (item.kind === 'form') return 'ASSEMBLING / THE CONTACT FORM';
+    if (item.kind === 'rows') return 'ALIGNING / THE DETAILS';
+    return 'SETTING / THE TYPOGRAPHY';
+  }
+  function updateBlueprint(item, geom, elapsed) {
+    const frame = item.kind === 'project' && geom.artRect ? geom.artRect : geom.rect;
+    if (!frame) return;
+    const inset = innerWidth <= 640 ? 4 : 8;
+    const left = Math.max(8, frame.left - inset);
+    const top = Math.max(34, frame.top - inset);
+    const w = Math.max(20, Math.min(innerWidth - left - 8, frame.width + inset * 2));
+    const h = item.kind === 'text' ? Math.min(26, Math.max(14,frame.height * .18))
+      : Math.max(26, Math.min(innerHeight - top - 55, frame.height + inset * 2));
+    const y = item.kind === 'text' ? Math.min(innerHeight - 54, frame.bottom + 5) : top;
+    blueprint.style.transform = 'translate3d(' + left + 'px,' + y + 'px,0)';
+    blueprint.style.width = w + 'px';
+    blueprint.style.height = h + 'px';
+    blueprint.dataset.kind = item.kind;
+    blueprintLabel.textContent = sceneLabel(item);
+    blueprint.style.opacity = String(elapsed < item.revealAt - 100
+      ? Math.min(1,(elapsed-120)/210)
+      : Math.max(0,1 - (elapsed - item.revealAt + 100) / 390));
+    blueprintTrack.style.transform = 'scaleX(' + clamp(elapsed / item.revealAt,0,1) + ')';
   }
   function restoreKinetic() {
     try { kinetic?.clear(); } catch {}
@@ -142,7 +190,9 @@
     });
   }
   function beginKinetic(container, builders, now) {
-    if (!kinetic || kineticDisabled) return false;
+    // Narrow-screen Canvas glyph overlays crossed native text as the camera
+    // moved. Use the accessible, crisp original headline on mobile instead.
+    if (compact || !kinetic || kineticDisabled) return false;
     try { return kinetic.start(container, builders, now); }
     catch {
       kineticDisabled = true;
@@ -167,7 +217,7 @@
       revealImmediately(el);
       if (!animated) return;
       // The hero h1 is built by particles; h2 is drafted letter by letter.
-      if (el.matches('h2') && beginKinetic(el, agents, performance.now())) return;
+      if (!compact && el.matches('h2') && beginKinetic(el, agents, performance.now())) return;
       const portrait = el.matches('.portrait');
       const heading = el.matches('h1');
       const frames = portrait
@@ -257,7 +307,7 @@
     const builders = stage?.assignments
       ?.filter(entry => entry.item === item)
       .map(entry => entry.a) || agents;
-    beginKinetic(item.el, builders, performance.now());
+    if (!compact && item.kind === 'text') beginKinetic(item.el, builders, performance.now());
     const animation = item.el.animate(keyframes(item), {
       duration: timings.reveal,
       easing: 'cubic-bezier(.22,1,.36,1)',
@@ -277,6 +327,8 @@
     if (!stage) return;
     stage.items.forEach(reveal);
     clearGuides();
+    agents.forEach(a => a.el.style.opacity = '0');
+    cursorTrails?.clear();
     stage = null;
     phase = 'hold';
     const upcoming = targets.some(el => !el.classList.contains('build-complete') && !el.hidden);
@@ -305,28 +357,46 @@
   }
   function chooseStage(now) {
     if (!enabled || document.hidden) return;
-    const available = targets.filter(el => !el.classList.contains('build-complete') && visible(el)).slice(0, 7);
+    const available = targets.filter(el =>
+      !el.classList.contains('build-complete') && visible(el));
     if (!available.length) {
       phase = 'idle';
       if (autoplay) startCamera(now);
       return;
     }
-    const items = available.map((el, i) => ({
-      el, kind: kind(el), done: false, revealAt: timings.revealStart + i * timings.revealGap
+    // One coherent object at a time. On wide screens group just two adjacent
+    // short copy blocks; projects and visual sections always get a solo scene.
+    const primary = available[0];
+    const next = available[1];
+    const groupCopy = !compact && next && kind(primary) === 'text' &&
+      kind(next) === 'text' &&
+      primary.getBoundingClientRect().height < 100 &&
+      next.getBoundingClientRect().height < 100;
+    const selected = groupCopy ? [primary,next] : [primary];
+    const items = selected.map((el,i) => ({
+      el,kind:kind(el),done:false,
+      revealAt:timings.revealStart + i*timings.revealGap
     }));
-    const assignments = swarm.planStage(items.map(layoutOf), agents, stageCount, viewport());
+    // 23 agents still exist and all build the opening, but only a focused
+    // construction crew moves during each readable portfolio chapter.
+    const crewSize = compact ? (items[0].kind === 'project' ? 6 : 4)
+      : (items[0].kind === 'project' ? 10 : 7);
+    const crew = Array.from({length:crewSize},(_,i) =>
+      agents[(stageCount * 5 + i) % agents.length]);
+    agents.forEach(a=>{if (!crew.includes(a)) a.el.style.opacity = '0';});
+    const assignments = swarm.planStage(items.map(layoutOf),crew,stageCount,viewport());
     assignments.forEach(entry => {
       entry.a.formation = entry.targetIndex;
       entry.a.task = entry.task;
       entry.a.el.dataset.task = entry.task;
     });
-    stage = {items, assignments, start: now, duration:
-      timings.revealStart + (items.length - 1) * timings.revealGap + timings.reveal + 210};
+    stage = {items,assignments,start:now,
+      duration:timings.revealStart + (items.length-1)*timings.revealGap +
+      timings.reveal + (compact?300:370)};
     stageCount++;
     phase = 'working';
-    const project = items.find(item => item.kind === 'project');
-    const name = project?.el.querySelector('h3')?.textContent?.trim();
-    caption.textContent = name ? 'CONSTRUCTING / ' + name.toUpperCase() : 'ASSEMBLING / 23 AGENTS';
+    cursorTrails?.clear();
+    caption.textContent = sceneLabel(items[0]);
   }
   function showWork(now) {
     if (!stage) { chooseStage(now); return; }
@@ -342,22 +412,12 @@
       sy += a.y;
     });
     if (positions.length) illuminate(sx / positions.length, sy / positions.length, .43);
-    const guideLimit = swarm.budget(innerWidth, navigator.deviceMemory, navigator.hardwareConcurrency).guideLimit;
-    stage.items.forEach((item, i) => {
+    stage.items.forEach((item,i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
-      const box = guides[i];
-      if (!box) return;
-      if (i >= guideLimit) {box.style.opacity = '0';return;}
-      const geometry = layouts[i];
-      const rect = item.kind === 'project' && geometry.artRect
-        ? geometry.artRect : geometry.rect;
-      box.dataset.kind = item.kind;
-      const y = item.kind === 'text' ? rect.bottom + 8 : rect.top;
-      box.style.transform = 'translate3d(' + rect.left + 'px,' + y + 'px,0)';
-      box.style.width = rect.width + 'px';
-      box.style.height = item.kind === 'text' ? '2px' : rect.height + 'px';
-      box.style.opacity = t > 490 && t < item.revealAt + 260 ? '.30' : '0';
     });
+    // The scaffold is dedicated to the primary focus, never overlaid on
+    // scattered text/controls from unrelated project blocks.
+    updateBlueprint(stage.items[0],layouts[0],t);
     if (t >= stage.duration) finishStage();
   }
   function startCamera(now) {
@@ -377,8 +437,16 @@
       illuminate(innerWidth / 2, innerHeight / 2, 0);
       return;
     }
-    const distance = Math.max(260, innerHeight * (compact ? .76 : .72));
-    const to = Math.min(max, scrollY + distance);
+    // Scroll towards the next unrevealed block instead of blindly skipping
+    // most of a viewport. It gives each project a deliberate camera landing.
+    const upcoming = targets.find(el =>
+      !el.classList.contains('build-complete') && !el.hidden &&
+      el.getBoundingClientRect().bottom > 0);
+    const targetY = upcoming
+      ? scrollY + upcoming.getBoundingClientRect().top - innerHeight * (compact ? .17 : .22)
+      : scrollY + innerHeight * .66;
+    const step = Math.max(190,innerHeight * (compact ? .72 : .70));
+    const to = Math.min(max,Math.max(scrollY + 110, Math.min(scrollY + step,targetY)));
     camera = {
       from: scrollY, to, start: now, duration: timings.camera,
       agents: agents.map(a => ({x:a.x,y:a.y}))
@@ -393,13 +461,11 @@
     const t = clamp((now - camera.start) / camera.duration, 0, 1);
     const eased = easeInOut(t);
     scrollTo({top: camera.from + (camera.to - camera.from) * eased, behavior: 'instant'});
-    const formations = swarm.cameraFrame(agents, camera.agents, t, viewport());
-    formations.forEach((position, i) => {
-      const a = agents[i];
-      a.formation = position.formation;
-      a.task = 'travel';
-      move(a, position.x, position.y, position.opacity);
-    });
+    // The camera belongs to the work. Don't cover completed content with
+    // traveling arrows or ribbons while the visitor is trying to read.
+    agents.forEach(a => a.el.style.opacity = '0');
+    cursorTrails?.clear();
+    restoreKinetic();
     illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .15);
     if (t >= 1) {
       camera = null;
@@ -417,7 +483,8 @@
       illuminate(lightX, lightY, .14);
       if (now >= holdUntil) chooseStage(now);
     } else if (phase === 'idle' && autoplay) chooseStage(now);
-    cursorTrails?.draw(now, agents, phase);
+    if (phase === 'intro' || phase === 'working')
+      cursorTrails?.draw(now, agents, phase);
     drawKinetic(now);
     if (['intro','working','camera','hold'].includes(phase) || (phase === 'idle' && autoplay)) schedule();
   }
