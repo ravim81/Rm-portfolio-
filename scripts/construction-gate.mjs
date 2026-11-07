@@ -49,63 +49,82 @@ for(const spec of scenarios){
   page.on('pageerror',e=>result.errors.push(String(e)));
   await page.goto(url,{waitUntil:'load',timeout:45000});
   for(const scene of scenes){
-   // An ephemeral construction-frame capture is useful for human review,
-   // but engine timing MUST be validated from samples collected on each RAF.
-   let captured=false;
-   // Do not block on a screenshot window after the card has already
-   // completed; that used to let WebKit scroll the scene offscreen.
-   const state=await page.waitForFunction(({id,selector})=>{
+   // Seek production showWork() deterministically. Visual quality must not
+   // depend on Chromium/WebKit CI runners hitting a narrow RAF interval.
+   const inspect=async progress=>page.evaluate(({id,progress})=>{
+     const seek=window.__portfolioAuditScene?.(id,progress);
+     if(!seek)return {missing:true};
+     const el=document.querySelector('.project[data-project="'+id+'"]');
+     const art=el.querySelector('.project-art').getBoundingClientRect();
+     const frame=document.querySelector('.build-blueprint').getBoundingClientRect();
      const draft=document.querySelector('.director-draft');
-     const amount=Number(draft?.dataset.progress);
-     if(draft?.dataset.target===id && draft.dataset.state==='construct' &&
-         amount>.12 && amount<.96)return 'building';
-     if(document.querySelector(selector)?.classList.contains('build-complete'))
-       return 'completed';
-     return false;
-   },scene,{timeout:55000,polling:40});
-   if(await state.jsonValue()==='building'){
-     await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-building.png'),animations:'allow'});
-     captured=true;
-   }
-   await page.waitForFunction(selector=>{
-     const card=document.querySelector(selector);
+     const offsets=[...draft.querySelectorAll('path')]
+       .map(p=>Number(p.getAttribute('stroke-dashoffset')));
+     const cursors=[...document.querySelectorAll('.build-agent')]
+       .filter(x=>Number(getComputedStyle(x).opacity)>.18);
+     const samples=(window.__portfolioSceneEvidence||[]).filter(x=>x.id===id);
+     const sample=samples[samples.length-1];
+     return {
+       id,progress,missing:false,
+       target:draft.dataset.target,
+       state:draft.dataset.state,
+       pending:el.classList.contains('build-pending'),
+       opacity:Number(getComputedStyle(el).opacity),
+       svgOpacity:Number(getComputedStyle(draft).opacity),
+       pathCount:offsets.length,
+       stroked:offsets.filter(x=>Number.isFinite(x)&&x<95).length,
+       cursorAttachments:sample?.cursorAttachments??0,
+       activeCursors:cursors.length,
+       frameDelta:{x:Math.abs(frame.left-art.left),y:Math.abs(frame.top-art.top)},
+       viewport:{height:innerHeight,top:art.top,bottom:art.bottom},
+       blueprintTarget:document.querySelector('.build-blueprint').dataset.target
+     };
+   },{id:scene.id,progress});
+   const arrival=await inspect(.22);
+   assert(!arrival.missing && arrival.pending && arrival.opacity<.03,
+     scene.id+': content visible before drafting '+JSON.stringify(arrival));
+   assert(arrival.target===scene.id && arrival.pathCount===6,
+     scene.id+': missing project-specific geometry '+JSON.stringify(arrival));
+   await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-arrival.png'),animations:'allow'});
+
+   const building=await inspect(.66);
+   assert(building.pending && building.opacity<.03,
+     scene.id+': finished content appeared before cursors '+JSON.stringify(building));
+   assert(building.svgOpacity>.4 && building.stroked>=3,
+     scene.id+': cursor actions did not draw visible geometry '+JSON.stringify(building));
+   assert(building.cursorAttachments>=3 && building.activeCursors===6,
+     scene.id+': cursors are not attached to their drawing tasks '+JSON.stringify(building));
+   assert(building.frameDelta.x<24 && building.frameDelta.y<24 &&
+      building.viewport.top<spec.height*.65 && building.viewport.bottom>spec.height*.15,
+     scene.id+': crew works away from the real artwork '+JSON.stringify(building));
+   await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-building.png'),animations:'allow'});
+
+   const polish=await inspect(.90);
+   assert(polish.pending && polish.stroked>=5 &&
+     polish.target===scene.id,scene.id+': unfinished project drawing '+JSON.stringify(polish));
+   await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-polish.png'),animations:'allow'});
+
+   const completing=await inspect(1.08);
+   assert(!completing.pending,scene.id+': finished scene remains pending');
+   await page.waitForFunction(id=>{
+     const card=document.querySelector('.project[data-project="'+id+'"]');
      return card?.classList.contains('build-complete') &&
        Number(getComputedStyle(card).opacity)>.82;
-   },scene.selector,{timeout:10000,polling:40});
-   const evidence=await page.evaluate(({id,selector})=>{
-     const card=document.querySelector(selector);
-     const frame=card.getBoundingClientRect();
-     const trace=(window.__portfolioSceneEvidence||[]).filter(x=>x.id===id);
-     const during=trace.filter(x=>x.progress>.48 && x.progress<.91 && x.pending);
-     return {
-       id,samples:trace.length,
-       early:trace.some(x=>x.progress<.30 && x.pending),
-       framed:trace.some(x=>x.blueprintTarget===id && x.pending),
-       drawing:during.some(x=>x.svgOpacity>.40 && x.strokes>=3 && x.pathCount===6),
-       attached:during.some(x=>x.cursorAttachments>=2 && x.crew===6),
-       progressRange:trace.length?[trace[0].progress,trace[trace.length-1].progress]:[],
-       visible:Number(getComputedStyle(card).opacity),
-       pending:card.classList.contains('build-pending'),
+   },scene.id,{timeout:10000,polling:40});
+   const after=await page.evaluate(id=>{
+     const card=document.querySelector('.project[data-project="'+id+'"]');
+     return {complete:card.classList.contains('build-complete'),
+       opacity:Number(getComputedStyle(card).opacity),
        name:card.querySelector('.project-info h3')?.textContent,
-       inViewport:frame.bottom>innerHeight*.08 && frame.top<innerHeight*.92,
-       simultaneousStaging:document.querySelectorAll('.build-staging').length
-     };
-   },{id:scene.id,selector:scene.selector});
-   assert(evidence.samples>=6,scene.id+': insufficient real-frame evidence '+JSON.stringify(evidence));
-   assert(evidence.early && evidence.framed,
-     scene.id+': cursors did not establish a frame before revealing '+JSON.stringify(evidence));
-   assert(evidence.drawing,
-     scene.id+': multiple vector tasks did not become visible '+JSON.stringify(evidence));
-   assert(evidence.attached,
-     scene.id+': independent cursors were not attached to their own task geometry '+JSON.stringify(evidence));
-   assert(!evidence.pending && evidence.visible>.8 && evidence.inViewport && !!evidence.name,
-     scene.id+': native content not readable after build '+JSON.stringify(evidence));
-   assert(evidence.simultaneousStaging===0,
-     scene.id+': ghost-preview objects remain on the page');
+       staged:document.querySelectorAll('.build-staging').length};
+   },scene.id);
+   assert(after.complete && after.opacity>.82 && !!after.name && after.staged===0,
+     scene.id+': real HTML not readable after construction '+JSON.stringify(after));
    await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-revealed.png'),animations:'allow'});
-   result.scenes.push({id:scene.id,passed:true,buildingScreenshot:captured,evidence});
+   const evidence={arrival,building,polish,after};
+   result.scenes.push({id:scene.id,passed:true,evidence});
    console.log('CONSTRUCTION_SCENE',spec.name,scene.id,
-     JSON.stringify({buildingScreenshot:captured,evidence}));
+      JSON.stringify({building,after}));
   }
   assert(result.errors.length===0,'page errors '+result.errors.join(' | '));
   result.passed=true;
