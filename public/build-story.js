@@ -473,7 +473,13 @@
       !el.classList.contains('build-complete') && !el.hidden &&
       !el.closest('[hidden]'));
     const rect = upcoming?.getBoundingClientRect();
-    const desiredTop = innerHeight * (compact ? .18 : .20);
+    // Projects and visual comparisons become composed camera shots. Small
+    // cards are centered vertically; long headlines stay higher for reading.
+    const cinematicCard = upcoming?.matches('.project,.comparison,.manifesto');
+    const desiredTop = cinematicCard && rect
+      ? clamp((innerHeight - rect.height) * .48,
+          innerHeight * .16, innerHeight * .32)
+      : innerHeight * (compact ? .18 : .20);
     const targetY = rect
       ? scrollY + rect.top - desiredTop
       : scrollY + innerHeight * .75;
