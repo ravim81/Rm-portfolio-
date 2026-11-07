@@ -36,7 +36,7 @@ test('swarm engine is stand-alone pure geometry and loads before the story contr
   assert.match(story,/swarm\.planStage/);
   assert.match(story,/swarm\.workFrame/);
   assert.match(story,/swarm\.introFrame/);
-  assert.match(story,/swarm\.cameraFrame/);
+  assert.match(story,/agents\.forEach\(a => a\.el\.style\.opacity = '0'\)/);
   assert.match(story,/!swarm/);
 });
 
