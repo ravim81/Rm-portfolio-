@@ -92,3 +92,26 @@ body.agent-story-mode{background-color:#09090b}
   .build-pending{opacity:1!important;pointer-events:auto}
   .build-controls{background:#161619;-webkit-backdrop-filter:none;backdrop-filter:none}
 }
+
+
+/* Particle-to-reality hero construction: Canvas lives below the agents,
+   above the ambient light, and never intercepts interactions. */
+.particle-intro-canvas {
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  display:none;
+  opacity:0;
+  width:100%;
+  height:100%;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+.agent-stage-light {z-index:0;}
+.agent-layer .build-agent {z-index:3;}
+.agent-layer .build-selection {z-index:2;}
+.agent-story-mode .hero {isolation:isolate;}
+@media (prefers-reduced-motion:reduce) {
+  .particle-intro-canvas {display:none!important;}
+}
