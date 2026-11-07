@@ -43,3 +43,19 @@ test('the directed story frames the next content and never builds in blank space
   assert.match(styles,/\.build-pending/);
   assert.doesNotMatch(source,/\.hero-bottom, \.section-heading > \*/);
 });
+
+test('director builds project-specific task paths before native content reveal',async()=>{
+  const director=await readFile(new URL('../public/scene-director.js',import.meta.url),'utf8');
+  const html=await readFile(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.doesNotThrow(()=>new Script(director));
+  for(const project of ['chem','reframe','brand','discovery']){
+    assert.match(director,new RegExp(project+':\\\\['));
+  }
+  assert.match(director,/getPointAtLength/);
+  assert.match(director,/dataset\\.tasks/);
+  assert.match(source,/sceneDirector\\.render/);
+  assert.match(source,/sceneDirector\\.start/);
+  assert.match(source,/sceneDirector\\?\\.clear/);
+  assert.ok(html.indexOf('scene-director.js')<html.indexOf('build-story.js'),
+    'director must load before orchestration');
+});
