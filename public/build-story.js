@@ -17,7 +17,7 @@
     revealGap: compact ? 120 : 140,
     reveal: compact ? 610 : 670,
     linger: compact ? 720 : 860,
-    camera: compact ? 890 : 1020
+    camera: compact ? 520 : 650
   });
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
@@ -203,7 +203,9 @@
   function beginKinetic(container, builders, now) {
     // Narrow-screen Canvas glyph overlays crossed native text as the camera
     // moved. Use the accessible, crisp original headline on mobile instead.
-    if (compact || !kinetic || kineticDisabled) return false;
+    // Original DOM typography is more legible than overlapping Canvas copies.
+    if (!kinetic || kineticDisabled) return false;
+    return false;
     try { return kinetic.start(container, builders, now); }
     catch {
       kineticDisabled = true;
@@ -477,11 +479,12 @@
       : scrollY + innerHeight * .75;
     // A direct but eased travel; unnecessary micro-scrolls used to leave
     // empty black gaps between every label and actual project card.
-    const distance = Math.max(0, targetY - scrollY);
-    const step = Math.max(innerHeight * .55, Math.min(innerHeight * 1.65,distance));
-    const to = Math.min(max,Math.max(scrollY + 65,Math.min(scrollY + step,targetY)));
+    // Travel directly to the next real object in a single controlled move.
+    // Intermediate half-screen moves were creating long empty black scenes.
+    const to = Math.min(max, Math.max(scrollY, targetY));
     camera = {
       from: scrollY, to, start: now, duration: timings.camera,
+      next: upcoming,
       agents: agents.map(a => ({x:a.x,y:a.y}))
     };
     phase = 'camera';
@@ -500,11 +503,19 @@
     // The camera belongs to the work. Don't cover completed content with
     // traveling arrows or ribbons while the visitor is trying to read.
     agents.forEach(a => a.el.style.opacity = '0');
-    illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .11);
+    illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), 0);
     if (t >= 1) {
+      const next = camera.next;
       camera = null;
       document.documentElement.classList.remove('agent-camera-moving');
-      chooseStage(now);
+      // Give the new camera position one layout frame to settle before
+      // measuring the cursor anchors. A stale rect caused drifting cursors.
+      requestAnimationFrame(() => {
+        if (!enabled || !autoplay || document.hidden) return;
+        if (next && !next.classList.contains('build-complete') && visible(next)) chooseStage(performance.now());
+        else chooseStage(performance.now());
+        schedule();
+      });
     }
   }
   function tick(now) {
@@ -517,8 +528,9 @@
       illuminate(lightX, lightY, .14);
       if (now >= holdUntil) chooseStage(now);
     } else if (phase === 'idle' && autoplay) chooseStage(now);
-    if (phase === 'intro' || phase === 'working')
-      cursorTrails?.draw(now, agents, phase);
+    // Trails belong to the wordmark opening only. On project cards their
+    // residual ribbons made the builders look disconnected from the frame.
+    if (phase === 'intro') cursorTrails?.draw(now, agents, phase);
     drawKinetic(now);
     if (['intro','working','camera','hold'].includes(phase) || (phase === 'idle' && autoplay)) schedule();
   }
