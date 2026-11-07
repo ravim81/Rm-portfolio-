@@ -96,7 +96,9 @@
   const pause = controls.querySelector('.build-pause');
   let introStart = performance.now();
   const heroNodes = targets.filter(el => el.closest('.hero'));
-  const particleIntro = !reduceMotion && window.createPortfolioParticleIntro
+  // On phones the particle wordmark rendered as an unreadable dust cloud.
+  // Retain the desktop cinematic intro; mobile reveals the real crisp text.
+  const particleIntro = !reduceMotion && !compact && window.createPortfolioParticleIntro
     ? window.createPortfolioParticleIntro({layer, heroHeading: document.querySelector('.hero h1')})
     : null;
   const cursorTrails = !reduceMotion && window.createPortfolioCursorTrails && typeof Path2D === 'function'
@@ -277,6 +279,41 @@
     if (!autoplay) return;
     const elapsed = Math.max(0, now - introStart);
     const width = innerWidth, height = innerHeight;
+    if (compact) {
+      // Six legible builders follow the REAL heading boundaries. The other
+      // seventeen are held out of view during this small-screen chapter.
+      const heading = document.querySelector('.hero h1');
+      const rect = heading?.getBoundingClientRect();
+      if (rect) {
+        const left = clamp(rect.left, 15, width - 25);
+        const right = clamp(rect.right, 25, width - 15);
+        const top = clamp(rect.top - 12, 80, height - 130);
+        const bottom = clamp(rect.bottom + 12, 110, height - 90);
+        const progress = easeOut(elapsed / 820);
+        const points = [
+          [left + (right-left)*progress, top],
+          [right, top + (bottom-top)*progress],
+          [right - (right-left)*progress, bottom],
+          [left, bottom - (bottom-top)*progress],
+          [left + (right-left)*(.15+.70*progress), top - 15],
+          [left + (right-left)*(.85-.70*progress), bottom + 15]
+        ];
+        agents.forEach((agent,i)=>{
+          if (i >= points.length) {agent.el.style.opacity='0';return;}
+          agent.task=['frame','edge','baseline','align','type','finish'][i];
+          agent.el.dataset.task=agent.task;
+          move(agent, points[i][0], points[i][1],
+            clamp((elapsed-100)/190)*clamp((1350-elapsed)/260)*.85);
+        });
+        illuminate((left+right)*.5,(top+bottom)*.5,.11);
+      }
+      // The real semantic hero content is legible immediately. The cursor
+      // crew briefly accentuates it rather than replacing it with particles.
+      if (elapsed >= 110) handoffHero(false);
+      if (elapsed >= 1350) finishIntro(now);
+      else caption.textContent = 'BUILDING / RAVI M.';
+      return;
+    }
     const formations = swarm.introFrame(agents, elapsed, viewport());
     formations.forEach((position, i) => {
       const a = agents[i];
