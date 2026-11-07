@@ -16,6 +16,7 @@
       fps:mobile||low?30:60,
       dpr:mobile?1.25:low?1.4:1.75,
       maxGlyphs:mobile?54:low?74:96,
+      maxConcurrent:mobile?2:3,
       duration:mobile?680:760,
       sourceReach:mobile?90:150
     };
@@ -113,7 +114,8 @@
 
     function start(container,builders=[],now=performance.now(),options={}) {
       const heading=headingFor(container);
-      if(!heading||active.has(heading)||!heading.isConnected||!config)return false;
+      if(!heading||active.has(heading)||!heading.isConnected||!config||
+        active.size>=config.maxConcurrent)return false;
       // Never hide the only accessible heading unless every glyph is drawable.
       let glyphs;
       try {glyphs=sample(heading);} catch {return false;}
