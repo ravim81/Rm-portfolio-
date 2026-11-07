@@ -4,8 +4,8 @@ Source repository for Ravi M's portfolio and Cloudflare Workers preview.
 
 - Preview Worker: `rm-portfolio-preview`
 - Editable website: `public/` (HTML, CSS, JavaScript, portraits and fonts)
-- Automatic 12-cursor tour, cursor-first reveals, project dialogs, filters and comparison slider are preserved.
-- Imported unchanged from ChatGPT Sites source commit `553c716f95e6cd1e2ad700c490fc8cf5e65b8a83`.
+- Automatic 23-agent cursor tour with choreographed cursor-first reveals, short readable pauses, smooth camera travel, replay, pause, manual exploration, project dialogs, filters, and comparison slider. Accessibility includes keyboard interruption and reduced-motion mode.
+- Originally imported from ChatGPT Sites source commit `553c716f95e6cd1e2ad700c490fc8cf5e65b8a83`; subsequently upgraded in GitHub with cinematic 23-agent orchestration.
 
 ## Development
 
@@ -19,7 +19,7 @@ npm run build
 
 ## Deployment
 
-The connected Cloudflare integration can deploy `.build/worker-upload.json` with the Workers multipart upload API. The generated bundle includes all assets; the running preview does not fetch its files from GitHub or ChatGPT.
+The connected Cloudflare integration can deploy `.build/worker-upload.json` with the Workers multipart upload API. The generated bundle includes all assets when deployed from a full local checkout. The connected deployment may temporarily use a pinned GitHub URL fallback for the large portrait if that binary cannot be transferred through the connector; other assets are bundled.
 
 Alternatively, set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` securely in your deployment environment and run `npm run deploy`. Never commit credentials. `SOURCE_REVISION` can identify the source revision; otherwise Git HEAD is used.
 
