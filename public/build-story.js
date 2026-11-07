@@ -293,6 +293,7 @@
     }));
     const assignments = agents.map((a, i) => {
       const targetIndex = (i + stageCount * 3) % items.length;
+      a.formation = targetIndex; // Shared target links nearby builders for temporary light-wireframes.
       const item = items[targetIndex];
       const indices = Array.from({length: roles.length}, (_, k) => k)
         .filter(k => (k + stageCount * 3) % items.length === targetIndex);
