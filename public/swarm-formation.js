@@ -63,7 +63,10 @@
     let p;
     if(type==='project') {
       const art=shape(item.artRect || {left:rect.left,top:rect.top,width:rect.width,height:rect.height*.73});
-      p=perimeter(art, (fraction*.83+trace*.15+.02)%1, vp.width<=640?7:12);
+      // Project copy begins below the artwork. Keep the outline inside that
+      // artwork even when the card's own height is much larger.
+      const safeArt={...art,height:Math.max(22,art.height-(vp.width<=640?18:24))};
+      p=perimeter(safeArt, (fraction*.83+trace*.15+.02)%1, vp.width<=640?7:10);
     } else if(type==='image') {
       const theta=TAU*(fraction+trace*.11)-Math.PI/2;
       p={x:rect.left+rect.width*.5+Math.cos(theta)*Math.max(22,rect.width*.54),
@@ -74,7 +77,10 @@
       p=lane===0?{x:rect.left+rect.width*.045,y:rect.top+local*rect.height}
         :lane===1?{x:rect.left+rect.width*(.48+trace*.035),y:rect.top+local*rect.height}
         :{x:rect.left+rect.width*.955,y:rect.top+local*rect.height};
-    } else if(type==='rows'||type==='form') {
+    } else if(type==='form') {
+      // Form agents draft the enclosing frame, not the input or button text.
+      p=perimeter(rect, fraction+trace*.12, vp.width<=640?6:12);
+    } else if(type==='rows') {
       const side=slot%2===0?-1:1;
       const row=Math.floor(slot/2), rows=Math.ceil(total/2);
       p={x:rect.left+rect.width*(side<0?0:1)+side*(vp.width<=640?7:12),
