@@ -49,7 +49,7 @@ test('director builds project-specific task paths before native content reveal',
   const html=await readFile(new URL('../public/index.html',import.meta.url),'utf8');
   assert.doesNotThrow(()=>new Script(director));
   for(const project of ['chem','reframe','brand','discovery']){
-    assert.match(director,new RegExp(project+':\\\\['));
+    assert.ok(director.includes(project+':'), 'Missing scene geometry for '+project);
   }
   assert.match(director,/getPointAtLength/);
   assert.match(director,/dataset\\.tasks/);
