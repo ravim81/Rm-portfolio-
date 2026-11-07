@@ -16,8 +16,8 @@ test('agent choreography is valid browser JavaScript with exactly 23 roles',()=>
 });
 
 test('reveals start after cursor approach and retain visitor controls',()=>{
-  assert.match(source,/revealStart:\s*compact \? 1060 : 1120/);
-  assert.match(source,/approach:\s*compact \? 710 : 690/);
+  assert.match(source,/revealStart:\s*compact \? 780 : 860/);
+  assert.match(source,/approach:\s*compact \? 570 : 610/);
   assert.match(source,/requestAnimationFrame/);
   assert.match(source,/stage\.items\.forEach/);
   assert.match(source,/focusin/);
@@ -32,4 +32,11 @@ test('visual effects do not intercept visitor input and support reduced motion',
   assert.match(styles,/\.agent-stage-light\{/);
   assert.match(styles,/@media\(prefers-reduced-motion:reduce\)/);
   assert.match(styles,/html\.agent-camera-moving\{scroll-behavior:auto!important\}/);
+});
+test('the directed story frames the next content and never builds in blank space',()=>{
+  assert.match(source,/r\.top < innerHeight \* \.44/);
+  assert.match(source,/selected\.forEach\(el=>el\.classList\.add\('build-staging'\)\)/);
+  assert.match(source,/desiredTop = innerHeight \* \(compact \? \.18 : \.20\)/);
+  assert.match(styles,/\.build-pending\.build-staging/);
+  assert.doesNotMatch(source,/\.hero-bottom, \.section-heading > \*/);
 });
