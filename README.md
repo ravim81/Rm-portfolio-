@@ -1,3 +1,27 @@
+
+## Scene Director 3.0 — cursor actions produce visible work
+
+Each project uses six task-owned SVG vector strokes, deliberately traced by
+six cursors. The actual card stays hidden while the cursors draw its outline,
+project-specific diagram, details, and final polish. Only after construction
+does the semantic HTML card reveal. This is animation choreography, not remote
+AI agents or a generated website editor.
+
+- `public/scene-director.js` defines independent visual tasks for ChemLabs,
+  Reframe, BrandSpool and AI Discovery, with measured cursor paths and
+  progressive SVG strokes. It shares `build-story.js`'s single animation clock.
+- The leader still follows the real artwork selection frame. Five collaborators
+  trace different elements within the same artwork; the rest are hidden during
+  the scene, but all 23 contribute to the opening and rotate between scenes.
+- All overlays are decorative, noninteractive and `aria-hidden`. No Canvas
+  screenshot replaces readable or focusable HTML. Visitor input immediately
+  cancels unfinished construction; replay restores a clean starting state.
+- Reduced-motion and unsupported effects fall back to normal HTML content.
+- `scripts/construction-gate.mjs` checks every project at multiple construction
+  phases, including real SVG strokes and cursor attachment, followed by a fully
+  visible HTML card. GitHub Actions runs source and Cloudflare checks in
+  isolated Chromium and WebKit processes and uploads before/after screenshots.
+
 # Ravi M — Portfolio
 
 Source repository for Ravi M's portfolio and Cloudflare Workers preview.
