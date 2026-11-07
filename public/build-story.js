@@ -503,20 +503,35 @@
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      if (phase === 'intro') { exploreFreely(); return; }
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
+      // Background tabs pause their clock rather than silently skipping the intro.
+      if (phase === 'intro') {
+        if (!introPausedAt) introPausedAt = performance.now();
+        return;
+      }
       if (stage) finishStage();
       setAutoplay(false);
     } else if (enabled) {
-      chooseStage(performance.now());
-      schedule();
+      if (phase === 'intro') {
+        if (autoplay && introPausedAt) {
+          const paused = performance.now() - introPausedAt;
+          introStart += paused;
+          particleIntro?.shiftTime(paused);
+          introPausedAt = 0;
+        }
+        if (autoplay) schedule();
+      } else {
+        chooseStage(performance.now());
+        schedule();
+      }
     }
   });
   // Deep links and restored browser positions should never be dragged back
   // through the hero animation; keep those visitors in control immediately.
   const deepLink = !!location.hash && location.hash !== '#home';
   const startManual = reduceMotion || deepLink || scrollY > 80;
+  if (!startManual && document.hidden) introPausedAt = performance.now();
   if (!startManual) {
     try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
     catch { introAvailable = false; }
