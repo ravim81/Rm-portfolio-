@@ -47,6 +47,33 @@ render loop or heavy blur/shadow filter is used.
 - `tests/cursor-trails.test.mjs` covers budget, drawing, fade-out, resizing,
   graceful fallback, script order, and shared-clock integration.
 
+## Intelligent 23-agent swarm formations
+
+`public/swarm-formation.js` is the deterministic geometry engine for the existing
+portfolio. It is loaded between the trail renderer and `public/build-story.js`
+and uses the *same* requestAnimationFrame clock as the particle intro and trails.
+
+- **23 builders, assigned deliberately:** every visible content block receives
+  at least one agent; complex project art, images, and comparisons receive more
+  agents than simple rows. Tasks include outline, illustration, inspection,
+  baseline, framing, before/after transition and polish.
+- **Content-aware formations:** image orbits, project-art boundaries,
+  heading baselines, form frames, comparison lanes, and aligned list rails.
+- **Smooth travel:** agents are allocated to the nearest available construction
+  location, follow restrained quadratic Bezier travel paths and keep their group
+  through a three-lane camera transition.
+- **Collision and copy avoidance:** short-range symmetrical separation and a
+  deterministic nearest-free correction keep the 23 pointers distinct, while
+  measured project information and artwork titles remain protected.
+- **Performance:** no extra animation loop, no physics library, no WebGL;
+  adaptive separation and fewer drafting guides for constrained/mobile screens.
+- **Accessibility:** cursors remain decorative with an aria-hidden overlay;
+  keyboard/touch/wheel input, manual exploration, reduced-motion, replay,
+  pause, deep links, and normal page interactions continue to work.
+- **Tests:** `tests/swarm-formation.test.mjs` covers all 23 assignments,
+  deterministic plans, mobile viewports, separation, project-copy clearance,
+  and intro/camera group formations.
+
 ## Development
 
 Use Node 22 or newer. No npm dependencies are required.
