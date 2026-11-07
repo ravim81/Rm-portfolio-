@@ -87,6 +87,23 @@ test('23 trails draw curved lines, decay, and clear without lingering',()=>{
   assert.equal(canvas.removed,true);
 });
 
+test('collaborating cursors briefly connect into a subtle shared wireframe',()=>{
+  const {sandbox,layer,events}=browser();
+  const engine=sandbox.window.createPortfolioCursorTrails({layer,agentCount:23});
+  const agents=cursors();
+  agents.forEach((a,i)=>{a.formation=Math.floor(i/8);});
+  engine.draw(0,agents,'working');
+  agents.forEach(a=>{a.x+=8;a.y+=3;});
+  engine.draw(30,agents,'working');
+  const wires=events.paths.filter(path=>path.steps.filter(p=>p[0]==='M').length>1);
+  assert.ok(wires.length>0,'a grouped wireframe path joins several agents');
+  engine.clear();
+  engine.draw(700,[],'hold');
+  const count=events.paths.length;
+  engine.draw(750,[],'hold');
+  assert.equal(events.paths.length,count,'connections do not linger in hold mode');
+});
+
 test('mobile and low-power devices get smaller, less expensive trails',()=>{
   const {sandbox}=browser();
   const budget=sandbox.window.portfolioCursorTrailBudget;
