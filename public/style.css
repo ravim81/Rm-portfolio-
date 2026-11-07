@@ -318,3 +318,38 @@ body.agent-story-mode{background-color:#09090b}
   }
   .build-controls button+button{padding-left:7px}
 }
+
+
+/* Scene focus refinement: show the ACTUAL object as a quiet blueprint while
+   its cursor crew drafts the frame. This removes empty black construction
+   scenes without displaying fully finished content prematurely. */
+.agent-story-mode .build-pending.build-staging {
+  opacity:.24!important;
+  filter:grayscale(.45) brightness(.82);
+  pointer-events:none!important;
+  will-change:opacity;
+}
+.agent-story-mode .project.build-pending.build-staging,
+.agent-story-mode .comparison.build-pending.build-staging {
+  opacity:.34!important;
+  filter:grayscale(.55) brightness(.74);
+}
+.agent-story-mode .section-heading.build-pending.build-staging,
+.agent-story-mode .about-title.build-pending.build-staging {
+  opacity:.28!important;
+  filter:grayscale(.25);
+}
+@media(max-width:640px) {
+  .agent-story-mode .build-pending.build-staging {opacity:.31!important;}
+  .agent-story-mode .project.build-pending.build-staging,
+  .agent-story-mode .comparison.build-pending.build-staging {
+    opacity:.42!important;
+  }
+}
+/* The completed object is always crisp, not permanently dimmed. */
+.agent-story-mode .build-complete {filter:none;}
+@media(prefers-reduced-motion:reduce) {
+  .agent-story-mode .build-pending.build-staging {
+    opacity:1!important;filter:none!important;
+  }
+}
