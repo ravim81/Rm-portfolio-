@@ -1,51 +1,432 @@
-/* Automatic, cursor-first portfolio assembly. Visual choreography only. */
-(()=>{
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const roles=[['Story','#fc536c'],['Design','#a990ff'],['Visuals','#59d9bd'],['Build','#6fb7ff'],['Type','#ffbd69'],['Layout','#eb94d6'],['Motion','#b9d978'],['Details','#79d6ec'],['Structure','#ff927e'],['Compose','#cfb1ff'],['Explore','#7ee6a5'],['Finish','#ffe28b']];
-const bar=document.createElement('div');bar.className='build-controls';bar.innerHTML='<span class="build-indicator"></span><span class="build-caption">AUTOPLAY / 12 BUILDERS</span><button type="button" class="build-replay">Replay tour ↻</button><button type="button" class="build-pause" aria-pressed="false">Pause tour</button><button type="button" class="build-manual">Explore freely</button>';document.body.append(bar);
-const layer=document.createElement('div');layer.className='agent-layer';layer.setAttribute('aria-hidden','true');document.body.append(layer);
-const agents=roles.map(([name,color])=>{const el=document.createElement('div');el.className='build-agent';el.style.setProperty('--agent',color);el.innerHTML='<svg width="23" height="28" viewBox="0 0 23 28"><path d="M2 2L20 16L12 17L8 25Z" fill="currentColor" stroke="#111" stroke-width="1.5"/></svg>';layer.append(el);const box=document.createElement('div');box.className='build-selection';box.style.setProperty('--agent',color);box.innerHTML='<i></i><i></i><i></i><i></i>';layer.append(box);return {el,box,target:null};});
-const selector='.hero-copy > *, .portrait, .hero-bottom, .section-heading > *, .filters, .project, .work-note, .about-title > *, .about-copy > *, .comparison, .steps article, .capabilities > .reveal, .cap-list details, .manifesto, .lab-rows details, .contact > .eyebrow, .contact-grid > .reveal, footer';
-const targets=[...document.querySelectorAll(selector)].filter(el=>!el.parentElement.closest('.project'));
-// One controller owns visibility so generic scroll reveals cannot expose content early.
-document.body.classList.remove('js-motion');
-let enabled=!reduce,ready=false,frame=0,started=0,busy=false,queue=new Set(),animations=[],batch=[];
-let touring=!reduce, moving=false, travelFrame=0, advanceTimer=0;
-const caption=bar.querySelector(".build-caption");
-function inView(el){const r=el.getBoundingClientRect();return !el.hidden&&r.bottom>80&&r.top<innerHeight-80;}
-function reveal(el){el.classList.remove('build-pending');el.classList.add('build-complete');}
-function hideCursors(){agents.forEach(a=>{a.el.style.opacity=0;a.box.style.opacity=0});cancelAnimationFrame(frame);}
-function finish(){animations.forEach(a=>a.finish());animations=[];batch.forEach(reveal);batch=[];hideCursors();busy=false;}
-function kind(el){if(el.matches('.project'))return 'project';if(el.matches('.portrait,.manifesto'))return 'image';if(el.matches('.comparison'))return 'comparison';if(el.matches('form')||el.querySelector('form'))return 'form';if(el.matches('details,.filters,.about-facts,footer'))return 'rows';return 'text';}
-function frames(el){const type=kind(el);const project=el.dataset.project;let first={opacity:0,clipPath:'inset(0 100% 0 0)',transform:'translateY(0)'};if(type==='image')first={opacity:0,clipPath:'inset(12% 12% 12% 12%)',transform:'scale(.96)'};if(type==='project')first={opacity:0,clipPath:project==='reframe'?'inset(0 100% 0 0)':project==='discovery'?'inset(40% 40% 40% 40%)':'inset(100% 0 0 0)',transform:'translateY(16px)'};if(type==='rows'||type==='form')first={opacity:0,clipPath:'inset(0 0 100% 0)',transform:'translateY(0)'};return [first,{opacity:1,clipPath:'inset(0 0 0 0)',transform:'translateY(0) scale(1)'}];}
-function tick(now){if(!enabled||document.hidden){finish();return;}const elapsed=now-started;
-agents.forEach((a,i)=>{if(!a.target)return;const r=a.target.getBoundingClientRect();const local=elapsed-a.order*45;const arriving=Math.min(1,Math.max(0,local/650));if(local<0||!inView(a.target)){a.el.style.opacity=0;a.box.style.opacity=0;return;}const x=Math.max(12,r.left),y=Math.max(82,r.top),w=Math.min(r.width,innerWidth-x-12),h=Math.max(10,Math.min(r.bottom-y,innerHeight-y-75));const work=Math.min(1,Math.max(0,(local-850)/600));let px=.08,py=.15;
-if(a.kind==='text'){px=.04+work*.9;py=.18+(a.slot%3)*.26;}
-else if(a.kind==='rows'||a.kind==='form'){px=a.slot%2?.92:.04;py=.05+work*.85;}
-else if(a.kind==='comparison'){px=work;py=a.slot%2?.9:.12;}
-else if(a.kind==='image'){const corner=(a.slot+i)%4;px=[.04,.94,.94,.04][corner];py=[.05,.05,.94,.94][corner];}
-else {const art=a.target.querySelector(a.target.dataset.project==='chem'?'.flask':a.target.dataset.project==='brand'?'.bottle':a.target.dataset.project==='discovery'?'.discovery-orbit':'.mini-browser.new');if(art){const ar=art.getBoundingClientRect();px=Math.max(.05,Math.min(.95,(ar.left-r.left+ar.width*(a.slot%2?.9:.1))/w));py=Math.max(.05,Math.min(.9,(ar.top-r.top+ar.height*(1-work))/h));}else{px=.1+work*.8;py=.5;}}
-const tx=Math.max(12,Math.min(innerWidth-30,x+w*px)),ty=Math.min(innerHeight-80,y+h*py);const ox=i%2?innerWidth-25:15,oy=85+(i/12)*(innerHeight-180);const ease=1-Math.pow(1-arriving,3);a.el.style.transform=`translate3d(${ox+(tx-ox)*ease}px,${oy+(ty-oy)*ease}px,0)`;a.el.style.opacity=elapsed>2350?Math.max(0,1-(elapsed-2350)/450):1;a.box.style.transform=`translate3d(${x}px,${y}px,0)`;a.box.style.width=w+'px';a.box.style.height=h+'px';a.box.style.opacity=a.slot===0&&local>550&&local<1900?'.5':'0';});
-if(elapsed<2800)frame=requestAnimationFrame(tick);else{finish();pump();}}
-function pump(){if(!enabled||!ready||busy||moving)return;clearTimeout(advanceTimer);batch=[...queue].filter(inView).slice(0,12);if(!batch.length){scheduleAdvance();return;}batch.forEach(el=>queue.delete(el));busy=true;started=performance.now();agents.forEach((a,i)=>{a.order=i%batch.length;a.target=batch[a.order];a.kind=kind(a.target);a.slot=Math.floor(i/batch.length)});
-// Arrival completes at 650ms. Each content block begins only after its cursors arrive.
-animations=batch.map((el,i)=>{el.classList.remove('build-pending');el.classList.add('build-complete');return el.animate(frames(el),{delay:850+i*45,duration:600,easing:'cubic-bezier(.16,1,.3,1)',fill:'backwards'});});frame=requestAnimationFrame(tick);}
-const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting&&!e.target.classList.contains('build-complete'))queue.add(e.target)});pump();},{threshold:.04});
-targets.forEach(el=>{if(enabled)el.classList.add('build-pending');observer.observe(el)});
-const pause=bar.querySelector('.build-pause');
-function tourState(value){touring=value;pause.textContent=value?'Pause tour':'Resume tour';pause.setAttribute('aria-pressed',String(!value));caption.textContent=value?'AUTOPLAY / 12 BUILDERS':'TOUR PAUSED';if(!value){clearTimeout(advanceTimer);cancelAnimationFrame(travelFrame);moving=false;}}
-function scheduleAdvance(){if(!touring||!enabled||!ready||busy||moving||document.hidden)return;clearTimeout(advanceTimer);advanceTimer=setTimeout(advance,1500);}
-function advance(){if(!touring||document.hidden||busy)return;const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);if(scrollY>=max-3){targets.forEach(reveal);queue.clear();tourState(false);caption.textContent='PORTFOLIO / COMPLETE';pause.textContent='Tour complete';return;}const from=scrollY,to=Math.min(max,from+Math.max(180,innerHeight*.68));moving=true;const began=performance.now();function travel(now){if(!touring||document.hidden){moving=false;return;}const p=Math.min(1,(now-began)/1100);const ease=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;scrollTo({top:from+(to-from)*ease,behavior:'instant'});if(p<1)travelFrame=requestAnimationFrame(travel);else{moving=false;targets.filter(el=>!el.classList.contains('build-complete')&&inView(el)).forEach(el=>queue.add(el));pump();}}travelFrame=requestAnimationFrame(travel);}
-function manual(){tourState(false);finish();enabled=false;targets.forEach(reveal);queue.clear();caption.textContent='EXPLORE AT YOUR PACE';}
-pause.addEventListener('click',()=>{tourState(!touring);if(touring){enabled=true;ready=true;pump();}});
-bar.querySelector('.build-manual').addEventListener('click',manual);
-bar.querySelector('.build-replay').addEventListener('click',()=>{tourState(false);finish();enabled=true;ready=false;queue.clear();targets.forEach(el=>{el.classList.remove('build-complete');el.classList.add('build-pending');});scrollTo({top:0,behavior:'instant'});tourState(true);setTimeout(()=>{ready=true;targets.filter(inView).forEach(el=>queue.add(el));pump()},250);});
-// Real visitor input always takes priority over the automatic camera.
-['wheel','touchstart'].forEach(event=>addEventListener(event,()=>{if(touring)tourState(false)},{passive:true}));
-addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)&&touring)tourState(false)});
-document.querySelectorAll('nav a,.hero .button,.hero-scroll,.project,details,form input,form textarea').forEach(el=>el.addEventListener('pointerdown',()=>{if(touring)tourState(false)}));
-addEventListener('scroll',()=>{if(enabled){targets.filter(el=>!el.classList.contains('build-complete')&&inView(el)).forEach(el=>queue.add(el));pump()}},{passive:true});
-document.addEventListener('focusin',e=>{const target=targets.find(el=>el.contains(e.target));if(target){reveal(target);queue.delete(target);animations.forEach(a=>{if(a.effect?.target===target)a.finish()})}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(advanceTimer);cancelAnimationFrame(travelFrame);moving=false;finish();}else pump()});
-if(reduce){manual();caption.textContent='REDUCED MOTION / MANUAL';}else setTimeout(()=>{ready=true;targets.filter(inView).forEach(el=>queue.add(el));pump()},1200);
+/* Ravi M — cinematic agent-built portfolio tour.
+   Cursor-first choreography; the portfolio content remains ordinary, accessible HTML. */
+(() => {
+  'use strict';
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const compact = matchMedia('(max-width: 640px)').matches;
+  const roles = [
+    'Story','Design','Build','Motion','Type','Layout','Image','Light',
+    'Detail','Frame','Depth','Craft','Flow','Space','Rhythm','Explore',
+    'Compose','Color','Research','Prototype','Interact','Polish','Finish'
+  ];
+  const palette = ['#ff536b','#f5ebe4','#78d8ff','#fc6680','#b8abff','#e8e1d7','#80eadb'];
+  const timings = Object.freeze({
+    gather: 1080,
+    approach: compact ? 610 : 560,
+    stagger: compact ? 9 : 12,
+    revealStart: compact ? 835 : 880,
+    revealGap: compact ? 110 : 130,
+    reveal: compact ? 580 : 650,
+    linger: compact ? 920 : 1140,
+    camera: compact ? 980 : 1160
+  });
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
+  const easeInOut = n => n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2;
+  const easeSoft = n => .5 - Math.cos(Math.PI * clamp(n, 0, 1)) / 2;
+
+  // A single engine owns content visibility; app.js's generic scroll reveals are disabled.
+  document.body.classList.remove('js-motion');
+  document.body.classList.add('agent-story-mode');
+  const selector = '.hero-copy > *, .portrait, .hero-bottom, .section-heading > *, .filters, .project, .work-note, .about-title > *, .about-copy > *, .comparison, .steps article, .capabilities > .reveal, .cap-list details, .manifesto, .lab-rows details, .contact > .eyebrow, .contact-grid > .reveal, footer';
+  const targets = Array.from(document.querySelectorAll(selector))
+    .filter(el => !(el.parentElement && el.parentElement.closest('.project')));
+  const visible = el => {
+    if (el.hidden || el.closest('[hidden]')) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.bottom > 85 && r.top < innerHeight - 55;
+  };
+
+  const controls = document.createElement('div');
+  controls.className = 'build-controls';
+  controls.innerHTML =
+    '<span class="build-indicator" aria-hidden="true"></span>' +
+    '<span class="build-caption" role="status" aria-live="off">AUTOPLAY / 23 AGENTS</span>' +
+    '<button class="build-replay" type="button">Replay ↻</button>' +
+    '<button class="build-pause" type="button" aria-pressed="false">Pause</button>' +
+    '<button class="build-manual" type="button">Explore freely</button>';
+  document.body.append(controls);
+
+  const layer = document.createElement('div');
+  layer.className = 'agent-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.append(layer);
+
+  const light = document.createElement('div');
+  light.className = 'agent-stage-light';
+  light.setAttribute('aria-hidden', 'true');
+  layer.append(light);
+
+  const agents = roles.map((role, i) => {
+    const el = document.createElement('div');
+    el.className = 'build-agent';
+    el.style.setProperty('--agent', palette[i % palette.length]);
+    el.innerHTML = '<svg viewBox="0 0 24 29" aria-hidden="true" focusable="false">' +
+      '<path d="M2 1.5L21.5 17.5L12.3 18.4L8.1 27Z" fill="currentColor" stroke="#0c0c10" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '</svg>';
+    layer.append(el);
+    return {el, role, x: innerWidth * .5, y: innerHeight * .48};
+  });
+
+  // A small number of guide frames, not one large expensive rectangle per cursor.
+  const guides = Array.from({length: 7}, () => {
+    const box = document.createElement('div');
+    box.className = 'build-selection';
+    box.innerHTML = '<i></i><i></i><i></i><i></i>';
+    layer.append(box);
+    return box;
+  });
+  const caption = controls.querySelector('.build-caption');
+  const pause = controls.querySelector('.build-pause');
+  const initialTime = performance.now();
+
+  let enabled = !reduceMotion;
+  let autoplay = !reduceMotion;
+  let phase = reduceMotion ? 'idle' : 'intro';
+  let stage = null;
+  let stageCount = 0;
+  let frame = 0;
+  let holdUntil = 0;
+  let camera = null;
+  let animations = [];
+  let lightX = innerWidth / 2;
+  let lightY = innerHeight / 2;
+
+  function move(a, x, y, opacity) {
+    a.x = clamp(x, 8, innerWidth - 12);
+    a.y = clamp(y, 18, innerHeight - 18);
+    a.el.style.transform = 'translate3d(' + a.x + 'px,' + a.y + 'px,0)';
+    a.el.style.opacity = String(clamp(opacity, 0, 1));
+  }
+  function illuminate(x, y, intensity) {
+    lightX += (x - lightX) * .16;
+    lightY += (y - lightY) * .16;
+    light.style.transform = 'translate3d(' + (lightX - 240) + 'px,' + (lightY - 240) + 'px,0)';
+    light.style.opacity = String(clamp(intensity, 0, .8));
+  }
+  function clearGuides() {
+    guides.forEach(box => { box.style.opacity = '0'; });
+  }
+  function showIntro(now) {
+    const t = clamp((now - initialTime) / timings.gather, 0, 1);
+    const width = innerWidth, height = innerHeight;
+    agents.forEach((a, i) => {
+      const angle = i * 2.39996 + t * .55;
+      const radius = (19 + Math.sqrt(i / roles.length) * (compact ? 84 : 156)) * (.35 + .65 * easeSoft(t));
+      move(a, width * .51 + Math.cos(angle) * radius, height * .47 + Math.sin(angle) * radius * .66, .24 + .72 * easeOut(t));
+    });
+    illuminate(width * .5, height * .47, .34 * t);
+    if (t >= 1) chooseStage(now);
+  }
+  function kind(el) {
+    if (el.matches('.project')) return 'project';
+    if (el.matches('.portrait,.manifesto')) return 'image';
+    if (el.matches('.comparison')) return 'comparison';
+    if (el.matches('details,.filters,footer') || el.querySelector('form')) return 'rows';
+    return 'text';
+  }
+  function keyframes(item) {
+    const el = item.el;
+    if (item.kind === 'project') {
+      const variant = el.dataset.project;
+      const start = variant === 'reframe' ? 'inset(0 100% 0 0)' :
+        variant === 'discovery' ? 'inset(42% 42% 42% 42%)' :
+        variant === 'brand' ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)';
+      return [
+        {opacity: 0, clipPath: start, transform: 'translateY(12px) scale(.985)'},
+        {opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'none'}
+      ];
+    }
+    if (item.kind === 'image' || item.kind === 'comparison') return [
+      {opacity: 0, clipPath: 'inset(9% 9% 9% 9%)', transform: 'scale(.972)'},
+      {opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'none'}
+    ];
+    if (item.kind === 'rows') return [
+      {opacity: 0, clipPath: 'inset(0 0 100% 0)', transform: 'translateY(8px)'},
+      {opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'none'}
+    ];
+    return [
+      {opacity: 0, clipPath: 'inset(0 100% 0 0)', transform: 'translateY(6px)'},
+      {opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'none'}
+    ];
+  }
+  function reveal(item) {
+    if (item.done) return;
+    item.done = true;
+    item.el.classList.remove('build-pending');
+    item.el.classList.add('build-complete');
+    const animation = item.el.animate(keyframes(item), {
+      duration: timings.reveal,
+      easing: 'cubic-bezier(.22,1,.36,1)',
+      fill: 'both'
+    });
+    animation.onfinish = () => animation.cancel(); // Preserve native hover and interactive transforms.
+    animations.push(animation);
+  }
+  function revealImmediately(el) {
+    el.classList.remove('build-pending');
+    el.classList.add('build-complete');
+  }
+  function finishStage() {
+    if (!stage) return;
+    stage.items.forEach(reveal);
+    clearGuides();
+    stage = null;
+    phase = 'hold';
+    const upcoming = targets.some(el => !el.classList.contains('build-complete') && !el.hidden);
+    holdUntil = performance.now() + (upcoming ? timings.linger : 570);
+    caption.textContent = autoplay ? 'AUTOPLAY / 23 AGENTS' : 'TOUR PAUSED';
+  }
+  function point(item, slot, count, progress) {
+    const rect = item.el.getBoundingClientRect();
+    const x = rect.left, y = rect.top, w = rect.width, h = rect.height;
+    const fraction = count > 1 ? slot / (count - 1) : .5;
+    let px, py;
+    if (item.kind === 'image') {
+      const theta = fraction * Math.PI * 1.82 - Math.PI * .88 + progress * .75;
+      px = .5 + .43 * Math.cos(theta);
+      py = .5 + .42 * Math.sin(theta);
+    } else if (item.kind === 'project') {
+      // Agents trace the artwork/card perimeter instead of covering its text.
+      const around = (fraction * .92 + progress * .26) % 1;
+      if (around < .25) {px = .07 + around * 3.44; py = .08;}
+      else if (around < .5) {px = .93; py = .08 + (around - .25) * 3.36;}
+      else if (around < .75) {px = .93 - (around - .5) * 3.44; py = .92;}
+      else {px = .07; py = .92 - (around - .75) * 3.36;}
+    } else if (item.kind === 'rows') {
+      px = .08 + (slot % 2) * .82;
+      py = .07 + progress * .83;
+    } else if (item.kind === 'comparison') {
+      px = .06 + progress * .87;
+      py = .16 + fraction * .67;
+    } else {
+      // Type is underlined by a horizontal drafting formation.
+      px = .05 + progress * .86;
+      py = .25 + fraction * .62;
+    }
+    return {x: x + clamp(px, .03, .96) * w, y: y + clamp(py, .03, .96) * h};
+  }
+  function chooseStage(now) {
+    if (!enabled || document.hidden) return;
+    const available = targets.filter(el => !el.classList.contains('build-complete') && visible(el)).slice(0, 7);
+    if (!available.length) {
+      phase = 'idle';
+      if (autoplay) startCamera(now);
+      return;
+    }
+    const items = available.map((el, i) => ({
+      el, kind: kind(el), done: false, revealAt: timings.revealStart + i * timings.revealGap
+    }));
+    const assignments = agents.map((a, i) => {
+      const targetIndex = (i + stageCount * 3) % items.length;
+      const item = items[targetIndex];
+      const indices = Array.from({length: roles.length}, (_, k) => k)
+        .filter(k => (k + stageCount * 3) % items.length === targetIndex);
+      return {a, item, slot: indices.indexOf(i), count: indices.length, fromX: a.x, fromY: a.y, offset: (i % 8) * timings.stagger};
+    });
+    stage = {items, assignments, start: now, duration:
+      timings.revealStart + (items.length - 1) * timings.revealGap + timings.reveal + 210};
+    stageCount++;
+    phase = 'working';
+    caption.textContent = 'ASSEMBLING / 23 AGENTS';
+  }
+  function showWork(now) {
+    if (!stage) { chooseStage(now); return; }
+    const t = now - stage.start;
+    const bounds = stage.items.map(item => item.el.getBoundingClientRect());
+    let sx = 0, sy = 0, count = 0;
+    stage.assignments.forEach((entry, i) => {
+      const {a, item, slot} = entry;
+      const flight = easeOut((t - entry.offset) / timings.approach);
+      const trace = clamp((t - timings.revealStart + 85 - entry.offset) / (timings.reveal + 240), 0, 1);
+      const destination = point(item, slot, entry.count, trace);
+      const x = entry.fromX + (destination.x - entry.fromX) * flight;
+      const y = entry.fromY + (destination.y - entry.fromY) * flight;
+      const entered = clamp((t - entry.offset) / 190, 0, 1);
+      const leaving = clamp((stage.duration - t) / 260, 0, 1);
+      move(a, x, y, (.35 + .62 * entered) * leaving);
+      sx += a.x; sy += a.y; count++;
+    });
+    if (count) illuminate(sx / count, sy / count, .45);
+    stage.items.forEach((item, i) => {
+      if (!item.done && t >= item.revealAt) reveal(item);
+      const box = guides[i];
+      const rect = bounds[i];
+      if (!rect) return;
+      box.style.transform = 'translate3d(' + rect.left + 'px,' + rect.top + 'px,0)';
+      box.style.width = rect.width + 'px';
+      box.style.height = rect.height + 'px';
+      box.style.opacity = t > 490 && t < item.revealAt + 260 ? '.30' : '0';
+    });
+    if (t >= stage.duration) finishStage();
+  }
+  function startCamera(now) {
+    if (!autoplay || document.hidden) { phase = 'idle'; return; }
+    const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+    if (scrollY >= max - 3) {
+      targets.forEach(revealImmediately);
+      enabled = false;
+      phase = 'done';
+      autoplay = false;
+      caption.textContent = 'PORTFOLIO / COMPLETE';
+      pause.textContent = 'Tour complete';
+      pause.setAttribute('aria-pressed', 'true');
+      agents.forEach(a => a.el.style.opacity = '0');
+      illuminate(innerWidth / 2, innerHeight / 2, 0);
+      return;
+    }
+    const distance = Math.max(260, innerHeight * (compact ? .76 : .72));
+    const to = Math.min(max, scrollY + distance);
+    camera = {
+      from: scrollY, to, start: now, duration: timings.camera,
+      agents: agents.map(a => ({x:a.x,y:a.y}))
+    };
+    phase = 'camera';
+    caption.textContent = 'MOVING THROUGH THE STORY';
+    document.documentElement.classList.add('agent-camera-moving');
+    clearGuides();
+  }
+  function showCamera(now) {
+    if (!camera) { phase = 'idle'; return; }
+    const t = clamp((now - camera.start) / camera.duration, 0, 1);
+    const eased = easeInOut(t);
+    scrollTo({top: camera.from + (camera.to - camera.from) * eased, behavior: 'instant'});
+    agents.forEach((a, i) => {
+      const angle = i * 2.39996 + eased * .72;
+      const destX = innerWidth * (.49 + .31 * Math.cos(angle));
+      const destY = innerHeight * (.47 + .29 * Math.sin(angle));
+      const start = camera.agents[i];
+      move(a, start.x + (destX - start.x) * easeSoft(t),
+        start.y + (destY - start.y) * easeSoft(t), .34 + .3 * Math.sin(Math.PI * t));
+    });
+    illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .15);
+    if (t >= 1) {
+      camera = null;
+      document.documentElement.classList.remove('agent-camera-moving');
+      chooseStage(now);
+    }
+  }
+  function tick(now) {
+    frame = 0;
+    if (!enabled || document.hidden) return;
+    if (phase === 'intro') showIntro(now);
+    else if (phase === 'working') showWork(now);
+    else if (phase === 'camera') showCamera(now);
+    else if (phase === 'hold') {
+      illuminate(lightX, lightY, .14);
+      if (now >= holdUntil) chooseStage(now);
+    } else if (phase === 'idle' && autoplay) chooseStage(now);
+    if (['intro','working','camera','hold'].includes(phase) || (phase === 'idle' && autoplay)) schedule();
+  }
+  function schedule() {
+    if (!frame && enabled && !document.hidden) frame = requestAnimationFrame(tick);
+  }
+  function setAutoplay(value) {
+    if (!enabled) return;
+    autoplay = value;
+    if (!autoplay && phase === 'camera') {
+      camera = null;
+      phase = 'idle';
+      document.documentElement.classList.remove('agent-camera-moving');
+    }
+    caption.textContent = autoplay ? 'AUTOPLAY / 23 AGENTS' : 'TOUR PAUSED';
+    pause.textContent = autoplay ? 'Pause' : 'Resume';
+    pause.setAttribute('aria-pressed', String(!autoplay));
+    if (autoplay) {
+      if (phase === 'idle' || phase === 'done') chooseStage(performance.now());
+      schedule();
+    }
+  }
+  function exploreFreely() {
+    autoplay = false;
+    enabled = false;
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    animations.forEach(a => { try { a.finish(); a.cancel(); } catch {} });
+    animations = [];
+    targets.forEach(revealImmediately);
+    clearGuides();
+    agents.forEach(a => a.el.style.opacity = '0');
+    light.style.opacity = '0';
+    phase = 'done';
+    document.documentElement.classList.remove('agent-camera-moving');
+    caption.textContent = 'EXPLORE AT YOUR PACE';
+    pause.disabled = true;
+  }
+  function replay() {
+    animations.forEach(a => { try { a.cancel(); } catch {} });
+    animations = [];
+    stage = null;
+    camera = null;
+    stageCount = 0;
+    enabled = true;
+    autoplay = true;
+    phase = 'intro';
+    pause.disabled = false;
+    pause.textContent = 'Pause';
+    pause.setAttribute('aria-pressed', 'false');
+    caption.textContent = 'AUTOPLAY / 23 AGENTS';
+    targets.forEach(el => {
+      el.classList.remove('build-complete');
+      el.classList.add('build-pending');
+    });
+    scrollTo({top:0,behavior:'instant'});
+    agents.forEach(a => { a.x = innerWidth * .5; a.y = innerHeight * .47; });
+    clearGuides();
+    // Give a short reset breath, not a second long loading screen.
+    const restart = performance.now();
+    phase = 'working';
+    chooseStage(restart + 220);
+    if (stage) stage.start = restart + 220;
+    schedule();
+  }
+
+  targets.forEach(el => {
+    if (enabled) el.classList.add('build-pending');
+    else revealImmediately(el);
+  });
+  controls.querySelector('.build-replay').addEventListener('click', replay);
+  controls.querySelector('.build-manual').addEventListener('click', exploreFreely);
+  pause.addEventListener('click', () => setAutoplay(!autoplay));
+  ['wheel','touchstart'].forEach(type => addEventListener(type, () => {
+    if (autoplay) setAutoplay(false);
+  }, {passive:true}));
+  addEventListener('keydown', e => {
+    if (autoplay && ['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)) setAutoplay(false);
+  });
+  document.addEventListener('pointerdown', e => {
+    if (autoplay && !e.target.closest('.build-controls') &&
+        e.target.closest('a,button,.project,details,input,textarea,select')) setAutoplay(false);
+  });
+  let scrollTick = 0;
+  addEventListener('scroll', () => {
+    if (!enabled || autoplay || phase === 'working' || scrollTick) return;
+    scrollTick = requestAnimationFrame(() => {
+      scrollTick = 0;
+      if (phase !== 'working' && phase !== 'intro') chooseStage(performance.now());
+      schedule();
+    });
+  }, {passive:true});
+  document.addEventListener('focusin', e => {
+    const item = targets.find(el => el.contains(e.target));
+    if (item) revealImmediately(item);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      if (stage) finishStage();
+      setAutoplay(false);
+    } else if (enabled) {
+      chooseStage(performance.now());
+      schedule();
+    }
+  });
+  if (reduceMotion) {
+    exploreFreely();
+    caption.textContent = 'REDUCED MOTION / MANUAL';
+  } else {
+    schedule();
+  }
 })();
