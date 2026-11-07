@@ -83,12 +83,27 @@
   let active=null;
   function start(item){
     const key=item?.el?.dataset?.project||'default';
-    active={key,kind:item.kind,el:item.el};
+    active={key,kind:item.kind,el:item.el,samples:[]};
     const library=paths[key]||paths.default;
     drawn.forEach((p,i)=>{
       p.setAttribute('d',library[i]);
+      p.setAttribute('pathLength','100');
       p.setAttribute('stroke-dasharray','100');
       p.setAttribute('stroke-dashoffset','100');
+      // All SVG geometry measurement happens ONCE at scene start. Repeated
+      // getTotalLength/getPointAtLength forced expensive layout in WebKit.
+      const points=[];
+      try {
+        const length=p.getTotalLength();
+        if(Number.isFinite(length)&&length>0&&length<1e5) {
+          for(let step=0;step<=16;step++){
+            const point=p.getPointAtLength(length*step/16);
+            if(!Number.isFinite(point.x)||!Number.isFinite(point.y))break;
+            points.push({x:point.x,y:point.y});
+          }
+        }
+      }catch{}
+      active.samples[i]=points.length===17?points:null;
     });
     svg.dataset.target=key;svg.dataset.state='arrive';
     svg.dataset.tasks='0';
@@ -111,9 +126,8 @@
     drawn.forEach((path,i)=>{
       const [start,end]=bands[i];
       const p=smoother((t-start)/(end-start));
-      // pathLength=100 standardizes precision and browser engines.
-      path.setAttribute('pathLength','100');
-      path.setAttribute('stroke-dasharray','100');
+      // Native SVG attributes are portable and need only one offset write
+      // per frame; path geometry and pathLength are cached at scene entry.
       path.setAttribute('stroke-dashoffset',String(100*(1-p)));
       path.style.opacity=String(.28+.7*p);
       if(p>.99)completed++;
@@ -121,14 +135,16 @@
       // coordinates are normalized to 0..1 and scaled by the group to 0..100.
       let x=left+width*(i===0?.03:i===1?.41:i===2?.60:i===3?.77:i===4?.18:.88);
       let y=top+height*(i===0?.04:i===1?.32:i===2?.62:i===3?.76:i===4?.87:.12);
-      try {
-        const pathLength=path.getTotalLength();
-        if(pathLength>0) {
-          const point=path.getPointAtLength(pathLength*p);
-          x=left+width*point.x;
-          y=top+height*point.y;
-        }
-      } catch {}
+      const sample=active.samples[i];
+      if(sample) {
+        const at=p*16, first=Math.min(15,Math.floor(at)),mix=at-first;
+        const point={
+          x:sample[first].x+(sample[first+1].x-sample[first].x)*mix,
+          y:sample[first].y+(sample[first+1].y-sample[first].y)*mix
+        };
+        x=left+width*point.x;
+        y=top+height*point.y;
+      }
       tips.push({x,y,progress:p,task:per[i]});
     });
     tag.style.transform='translate3d('+clamp(left+12,8,viewport.width-140)+'px,'+
