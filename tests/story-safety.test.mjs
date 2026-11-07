@@ -7,9 +7,11 @@ const safety = await readFile(new URL('../public/story-safety.js',import.meta.ur
 const story = await readFile(new URL('../public/build-story.js',import.meta.url),'utf8');
 const html = await readFile(new URL('../public/index.html',import.meta.url),'utf8');
 
-function createRuntime({hook=false}={}) {
+function createRuntime({hook=false,kineticHidden=false,pending=true}={}) {
   const listeners = {}, timers = [];
-  const names = new Set(['build-pending']);
+  const names = new Set(pending?['build-pending']:[]);
+  const hiddenNames = new Set(kineticHidden?['kinetic-source-hidden']:[]);
+  const heading={classList:{remove(v){hiddenNames.delete(v)}}};
   const node={classList:{
     contains(name){return names.has(name)},
     remove(name){names.delete(name)},
@@ -18,7 +20,11 @@ function createRuntime({hook=false}={}) {
   let removed=0, called=0;
   const document={
     hidden:false,
-    querySelectorAll(sel){return sel==='.build-pending'&&names.has('build-pending')?[node]:[]},
+    querySelectorAll(sel){
+      if(sel==='.build-pending')return names.has('build-pending')?[node]:[];
+      if(sel==='.kinetic-source-hidden')return hiddenNames.has('kinetic-source-hidden')?[heading]:[];
+      return [];
+    },
     querySelector(sel) {
       if(sel==='.hero h1')return node;
       if(sel==='.agent-layer'||sel==='.build-controls')return {remove(){removed++}};
@@ -37,7 +43,7 @@ function createRuntime({hook=false}={}) {
     node.classList.add('build-complete');
   };
   runInNewContext(safety,{window,document,String});
-  return {window,node,names,listeners,timers,get called(){return called},get removed(){return removed},document};
+  return {window,node,names,hiddenNames,listeners,timers,get called(){return called},get removed(){return removed},document};
 }
 
 test('safety net loads before animation and parses independently',()=>{
@@ -84,4 +90,18 @@ test('hidden tab is not timed out prematurely',()=>{
   env.timers[0]();
   assert.ok(env.names.has('build-pending'));
   assert.equal(env.timers.length,2);
+});
+
+
+test('kinetic renderer errors restore headings even after regular content is complete',()=>{
+  const env=createRuntime({pending:false,kineticHidden:true});
+  env.listeners.error({filename:'https://portfolio.test/kinetic-typography.js'});
+  assert.ok(!env.hiddenNames.has('kinetic-source-hidden'));
+  assert.equal(env.removed,2);
+});
+
+test('watchdog ignores a harmless kinetic error when no text is hidden',()=>{
+  const env=createRuntime({pending:false});
+  env.listeners.error({filename:'https://portfolio.test/kinetic-typography.js'});
+  assert.equal(env.removed,0);
 });
