@@ -87,8 +87,8 @@
     const library=paths[key]||paths.default;
     drawn.forEach((p,i)=>{
       p.setAttribute('d',library[i]);
-      p.style.strokeDasharray='1000';
-      p.style.strokeDashoffset='1000';
+      p.setAttribute('stroke-dasharray','100');
+      p.setAttribute('stroke-dashoffset','100');
     });
     svg.dataset.target=key;svg.dataset.state='arrive';
     svg.dataset.tasks='0';
@@ -113,8 +113,8 @@
       const p=smoother((t-start)/(end-start));
       // pathLength=100 standardizes precision and browser engines.
       path.setAttribute('pathLength','100');
-      path.style.strokeDasharray='100';
-      path.style.strokeDashoffset=String(100*(1-p));
+      path.setAttribute('stroke-dasharray','100');
+      path.setAttribute('stroke-dashoffset',String(100*(1-p)));
       path.style.opacity=String(.28+.7*p);
       if(p>.99)completed++;
       // The cursor travels along the exact SVG path it is creating. SVG
