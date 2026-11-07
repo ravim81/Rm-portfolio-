@@ -187,7 +187,38 @@ async function motionPass(browser,label,device) {
   const page=await context.newPage(),errors=capture(page);
   try{
     await page.goto(url,{waitUntil:'domcontentloaded',timeout:25000});
-    await page.waitForTimeout(900);
+    // On narrow phones the first screen must already communicate the site.
+    // The previous canvas intro rendered a cloud of particles over blank space.
+    if (device.width<=600) {
+      await page.waitForTimeout(380);
+      const opening=await page.evaluate(()=>{
+        const title=document.querySelector('.hero h1');
+        const rect=title?.getBoundingClientRect();
+        const portrait=document.querySelector('.portrait')?.getBoundingClientRect();
+        const active=[...document.querySelectorAll('.build-agent')]
+          .filter(a=>Number(getComputedStyle(a).opacity)>.15);
+        const particles=document.querySelector('.particle-intro-canvas');
+        return {
+          readable:!!title && !title.classList.contains('build-pending') &&
+            Number(getComputedStyle(title).opacity)>.8,
+          titleTop:rect?.top,titleBottom:rect?.bottom,
+          portraitTop:portrait?.top,portraitBottom:portrait?.bottom,
+          activeAgents:active.length,
+          particlesVisible:!!particles && getComputedStyle(particles).display!=='none' &&
+            Number(getComputedStyle(particles).opacity)>.05,
+          viewport:innerHeight,
+          heroHeight:document.querySelector('.hero')?.getBoundingClientRect().height
+        };
+      });
+      assert(opening.readable,'mobile opening hides actual name: '+JSON.stringify(opening));
+      assert(!opening.particlesVisible,'mobile intro particle cloud still covers wordmark');
+      assert(opening.activeAgents<=6,'mobile shows loose 23-cursor scatter: '+JSON.stringify(opening));
+      assert(opening.heroHeight<=Math.max(750,opening.viewport)+32,
+        'mobile hero reserves a huge empty region: '+JSON.stringify(opening));
+      await page.screenshot({path:join(out,label+'-'+device.name+'-OPENING.png'),fullPage:false,animations:'allow'});
+      record(label,device.name,'mobile-opening',{pass:true,opening});
+    }
+    await page.waitForTimeout(device.width<=600?520:900);
     const early=await page.evaluate(()=>({
       agents:document.querySelectorAll('.build-agent').length,
       intro:document.querySelector('.build-caption')?.textContent,
