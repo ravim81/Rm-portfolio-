@@ -513,14 +513,21 @@
       schedule();
     }
   });
-  if (!reduceMotion) {
+  // Deep links and restored browser positions should never be dragged back
+  // through the hero animation; keep those visitors in control immediately.
+  const deepLink = !!location.hash && location.hash !== '#home';
+  const startManual = reduceMotion || deepLink || scrollY > 80;
+  if (!startManual) {
     try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
     catch { introAvailable = false; }
   }
-  if (reduceMotion) {
+  addEventListener('pageshow', e => {
+    if (e.persisted && phase === 'intro') exploreFreely();
+  });
+  if (startManual) {
     exploreFreely();
-    controls.querySelector('.build-replay').disabled = true;
-    caption.textContent = 'REDUCED MOTION / MANUAL';
+    controls.querySelector('.build-replay').disabled = reduceMotion;
+    caption.textContent = reduceMotion ? 'REDUCED MOTION / MANUAL' : 'OPENED AT SECTION / MANUAL';
   } else {
     schedule();
   }
