@@ -25,7 +25,7 @@ const server=createServer(async(req,res)=>{
   } catch {res.writeHead(404).end('Not found');}
 });
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
-const url='http://127.0.0.1:'+server.address().port+'/';
+const url=process.env.PORTFOLIO_URL || 'http://127.0.0.1:'+server.address().port+'/';
 
 const devices=[
   {name:'small-mobile',width:320,height:640,touch:true},
@@ -79,6 +79,11 @@ async function layoutPass(browser,label,device) {
           scrollWidth:e.scrollWidth,clientWidth:e.clientWidth,display:getComputedStyle(e).display};};
       return {vw,documentWidth,title:document.title,menu:box('.menu-toggle'),hero:box('.hero'),
         heading:box('.hero h1'),subtitle:box('.hero h2'),portrait:box('.portrait'),
+        titleLines:(()=>{
+          const e=document.querySelector('.hero h1');
+          const lineHeight=parseFloat(getComputedStyle(e).lineHeight);
+          return e.getBoundingClientRect().height/lineHeight;
+        })(),
         work:box('.work'),contact:box('.contact'),image:{
           loaded:document.querySelector('.portrait img').complete,
           naturalWidth:document.querySelector('.portrait img').naturalWidth
@@ -94,6 +99,10 @@ async function layoutPass(browser,label,device) {
     assert(result.pending===0,'reduced-motion page leaves hidden content');
     assert(result.hiddenTypes===0,'reduced-motion leaves hidden glyphs');
     assert(result.heading && result.heading.right<=result.vw+4,'hero title exceeds viewport');
+    assert(result.heading.scrollWidth<=result.heading.clientWidth+4,'hero glyphs overflow the title box');
+    assert(result.titleLines<=1.2,'hero wordmark unexpectedly wraps into multiple lines');
+    assert(result.hero.scrollWidth<=result.vw+4,'hero decorative media overflows the viewport');
+    assert(result.portrait.right<=result.vw+4,'portrait is cropped beyond the viewport');
     assert(result.subtitle && result.subtitle.right<=result.vw+4,'hero subtitle exceeds viewport');
     assert(result.contact?.height>0,'contact section is collapsed');
 
@@ -170,7 +179,10 @@ async function motionPass(browser,label,device) {
     assert(active.caption!=='EXPLORE AT YOUR PACE','autoplay abandoned unexpectedly');
 
     // Manual user input must return usable HTML and clear artificial text hiding.
-    await page.mouse.wheel(0,350);
+    // Mobile WebKit does not implement wheel events. Exercise a genuine touch
+    // on phones/tablets; desktop gets the standard wheel takeover.
+    if(device.touch)await page.touchscreen.tap(device.width-26,Math.round(device.height*.5));
+    else await page.mouse.wheel(0,350);
     await page.waitForTimeout(200);
     const manual=await page.evaluate(()=>({
       caption:document.querySelector('.build-caption')?.textContent,
