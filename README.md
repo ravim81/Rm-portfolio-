@@ -26,6 +26,27 @@ the real, accessible content. No image or canvas text substitutes for semantic H
 - `npm run check` includes a mocked Canvas rendering test, quality-budget checks,
   source integration assertions and existing Worker tests.
 
+## Cinematic cursor trails
+
+The 23 cursors draw short red, rose, and silver light ribbons using
+`public/cursor-trails.js`. This is a single lightweight Canvas 2D overlay,
+integrated into `build-story.js`'s existing animation frame. No separate
+render loop or heavy blur/shadow filter is used.
+
+- Curved trails track each agent during particle construction, content reveals,
+  and camera transitions, then fade out naturally.
+- Collaborators briefly connect with faint geometric drafting lines;
+  the lines are hidden when an agent moves on to another part of the story.
+- Low-end/mobile settings reduce resolution, history length, and frame rate;
+  desktop uses a denser trail history where resources allow.
+- Pausing freezes animation timelines, camera position, and particle timing;
+  Resume continues at the same point. Scrolling or interacting takes over
+  the page and removes the effects cleanly.
+- Replay clears old trails and rebuilds both the particle intro and the tour.
+- Reduced-motion mode and environments without Canvas/Path2D stay functional.
+- `tests/cursor-trails.test.mjs` covers budget, drawing, fade-out, resizing,
+  graceful fallback, script order, and shared-clock integration.
+
 ## Development
 
 Use Node 22 or newer. No npm dependencies are required.
