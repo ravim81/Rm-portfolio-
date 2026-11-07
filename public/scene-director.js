@@ -117,9 +117,18 @@
       path.style.strokeDashoffset=String(100*(1-p));
       path.style.opacity=String(.28+.7*p);
       if(p>.99)completed++;
-      // Cursor tip is positioned beside its OWN task's drawn line.
-      const x=left+width*(i===0?.03:i===1?.41:i===2?.60:i===3?.77:i===4?.18:.88);
-      const y=top+height*(i===0?.04:i===1?.32:i===2?.62:i===3?.76:i===4?.87:.12);
+      // The cursor travels along the exact SVG path it is creating. SVG
+      // coordinates are normalized to 0..1 and scaled by the group to 0..100.
+      let x=left+width*(i===0?.03:i===1?.41:i===2?.60:i===3?.77:i===4?.18:.88);
+      let y=top+height*(i===0?.04:i===1?.32:i===2?.62:i===3?.76:i===4?.87:.12);
+      try {
+        const pathLength=path.getTotalLength();
+        if(pathLength>0) {
+          const point=path.getPointAtLength(pathLength*p);
+          x=left+width*point.x;
+          y=top+height*point.y;
+        }
+      } catch {}
       tips.push({x,y,progress:p,task:per[i]});
     });
     tag.style.transform='translate3d('+clamp(left+12,8,viewport.width-140)+'px,'+
