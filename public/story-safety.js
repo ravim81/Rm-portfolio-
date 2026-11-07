@@ -4,12 +4,13 @@
 (() => {
   'use strict';
   let recovered = false;
-  const engineFile = /(?:build-story|swarm-formation|particle-intro|cursor-trails)\.js(?:$|\?)/;
+  const engineFile = /(?:build-story|swarm-formation|particle-intro|cursor-trails|kinetic-typography)\.js(?:$|\?)/;
 
   function release(reason) {
     if (recovered || document.hidden) return;
     const pending = document.querySelectorAll('.build-pending');
-    if (!pending.length) return;
+    const hiddenText = document.querySelectorAll('.kinetic-source-hidden');
+    if (!pending.length && !hiddenText.length) return;
     recovered = true;
     try {
       if (typeof window.__portfolioStoryRecover === 'function') {
@@ -21,6 +22,9 @@
     for (const node of pending) {
       node.classList.remove('build-pending');
       node.classList.add('build-complete');
+    }
+    for (const heading of hiddenText) {
+      heading.classList.remove('kinetic-source-hidden');
     }
     document.querySelector('.agent-layer')?.remove();
     document.querySelector('.build-controls')?.remove();
