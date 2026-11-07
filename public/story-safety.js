@@ -39,7 +39,8 @@
 
   function verifyIntro() {
     if (recovered) return;
-    if (document.hidden) {
+    if (document.hidden ||
+        document.querySelector('.build-pause')?.getAttribute?.('aria-pressed') === 'true') {
       window.setTimeout(verifyIntro, 2500);
       return;
     }
