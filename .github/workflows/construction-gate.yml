@@ -37,6 +37,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
   published-construction:
+    # Run after local validation: parallel WebKit GPU sessions caused
+    # intermittent runner stalls despite independently passing both gates.
+    needs: construction
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
