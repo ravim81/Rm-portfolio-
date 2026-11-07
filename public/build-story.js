@@ -87,6 +87,9 @@
   const cursorTrails = !reduceMotion && window.createPortfolioCursorTrails && typeof Path2D === 'function'
     ? window.createPortfolioCursorTrails({layer, agentCount: agents.length})
     : null;
+  const swarm = !reduceMotion && window.createPortfolioSwarm
+    ? window.createPortfolioSwarm({count: agents.length})
+    : null;
   let introAvailable = false;
   let introHandoff = false;
   let introPausedAt = 0;
@@ -104,6 +107,12 @@
   let animations = [];
   let lightX = innerWidth / 2;
   let lightY = innerHeight / 2;
+  const viewport = () => ({
+    width: innerWidth,
+    height: innerHeight,
+    memory: navigator.deviceMemory || 8,
+    cores: navigator.hardwareConcurrency || 8
+  });
 
   function move(a, x, y, opacity) {
     a.x = clamp(x, 8, innerWidth - 12);
@@ -159,28 +168,13 @@
   function showIntro(now) {
     if (!autoplay) return;
     const elapsed = Math.max(0, now - introStart);
-    const gather = easeSoft(elapsed / 1030);
     const width = innerWidth, height = innerHeight;
-    const bandWidth = Math.min(width * .78, compact ? width * .88 : 850);
-    const bandLeft = (width - bandWidth) / 2;
-    // 8 / 8 / 7 builders distribute around the three wordmark regions.
-    agents.forEach((a, i) => {
-      const group = i < 8 ? 0 : i < 16 ? 1 : 2;
-      const index = i < 8 ? i : i < 16 ? i - 8 : i - 16;
-      const count = group === 2 ? 7 : 8;
-      const orbit = index / count * Math.PI * 2 - Math.PI / 2;
-      const anchorX = bandLeft + (group + .5) * bandWidth / 3 +
-        Math.cos(orbit) * (compact ? 25 : 53);
-      const anchorY = height * (compact ? .42 : .455) +
-        Math.sin(orbit) * (compact ? 57 : 92);
-      const initialAngle = i * 2.39996323;
-      const originX = width * .5 + Math.cos(initialAngle) * Math.min(width * .53, 540);
-      const originY = height * .47 + Math.sin(initialAngle) * height * .42;
-      const arrival = easeOut((elapsed - (i % 5) * 24) / 960);
-      const sway = Math.sin(elapsed * .0018 + orbit) * (1 - gather) * 8;
-      move(a, originX + (anchorX - originX) * arrival + sway,
-        originY + (anchorY - originY) * arrival,
-        .12 + .84 * easeOut(elapsed / 500));
+    const formations = swarm.introFrame(agents, elapsed, viewport());
+    formations.forEach((position, i) => {
+      const a = agents[i];
+      a.formation = position.formation;
+      a.task = 'construct';
+      move(a, position.x, position.y, position.opacity);
     });
     illuminate(width * .5, height * .44,
       elapsed < 2230 ? .10 + .30 * easeOut(elapsed / 1100) : .13);
@@ -251,34 +245,22 @@
     holdUntil = performance.now() + (upcoming ? timings.linger : 570);
     caption.textContent = autoplay ? 'AUTOPLAY / 23 AGENTS' : 'TOUR PAUSED';
   }
-  function point(item, slot, count, progress) {
+  // Measure each block once per frame. The swarm engine then works entirely
+  // in plain geometry, without repeatedly reading the DOM for 23 cursors.
+  function layoutOf(item) {
     const rect = item.el.getBoundingClientRect();
-    const x = rect.left, y = rect.top, w = rect.width, h = rect.height;
-    const fraction = count > 1 ? slot / (count - 1) : .5;
-    let px, py;
-    if (item.kind === 'image') {
-      const theta = fraction * Math.PI * 1.82 - Math.PI * .88 + progress * .75;
-      px = .5 + .43 * Math.cos(theta);
-      py = .5 + .42 * Math.sin(theta);
-    } else if (item.kind === 'project') {
-      // Agents trace the artwork/card perimeter instead of covering its text.
-      const around = (fraction * .92 + progress * .26) % 1;
-      if (around < .25) {px = .07 + around * 3.44; py = .08;}
-      else if (around < .5) {px = .93; py = .08 + (around - .25) * 3.36;}
-      else if (around < .75) {px = .93 - (around - .5) * 3.44; py = .92;}
-      else {px = .07; py = .92 - (around - .75) * 3.36;}
-    } else if (item.kind === 'rows') {
-      px = .08 + (slot % 2) * .82;
-      py = .07 + progress * .83;
-    } else if (item.kind === 'comparison') {
-      px = .06 + progress * .87;
-      py = .16 + fraction * .67;
-    } else {
-      // Type is underlined by a horizontal drafting formation.
-      px = .05 + progress * .86;
-      py = .25 + fraction * .62;
-    }
-    return {x: x + clamp(px, .03, .96) * w, y: y + clamp(py, .03, .96) * h};
+    const art = item.kind === 'project'
+      ? item.el.querySelector('.project-art')?.getBoundingClientRect()
+      : null;
+    const copy = item.kind === 'project'
+      ? item.el.querySelector('.project-info')?.getBoundingClientRect()
+      : null;
+    return {
+      kind: item.kind,
+      rect,
+      artRect: art || null,
+      avoidRects: copy ? [copy] : []
+    };
   }
   function chooseStage(now) {
     if (!enabled || document.hidden) return;
@@ -291,13 +273,11 @@
     const items = available.map((el, i) => ({
       el, kind: kind(el), done: false, revealAt: timings.revealStart + i * timings.revealGap
     }));
-    const assignments = agents.map((a, i) => {
-      const targetIndex = (i + stageCount * 3) % items.length;
-      a.formation = targetIndex; // Shared target links nearby builders for temporary light-wireframes.
-      const item = items[targetIndex];
-      const indices = Array.from({length: roles.length}, (_, k) => k)
-        .filter(k => (k + stageCount * 3) % items.length === targetIndex);
-      return {a, item, slot: indices.indexOf(i), count: indices.length, fromX: a.x, fromY: a.y, offset: (i % 8) * timings.stagger};
+    const assignments = swarm.planStage(items.map(layoutOf), agents, stageCount, viewport());
+    assignments.forEach(entry => {
+      entry.a.formation = entry.targetIndex;
+      entry.a.task = entry.task;
+      entry.a.el.dataset.task = entry.task;
     });
     stage = {items, assignments, start: now, duration:
       timings.revealStart + (items.length - 1) * timings.revealGap + timings.reveal + 210};
@@ -308,25 +288,21 @@
   function showWork(now) {
     if (!stage) { chooseStage(now); return; }
     const t = now - stage.start;
-    const bounds = stage.items.map(item => item.el.getBoundingClientRect());
-    let sx = 0, sy = 0, count = 0;
-    stage.assignments.forEach((entry, i) => {
-      const {a, item, slot} = entry;
-      const flight = easeOut((t - entry.offset) / timings.approach);
-      const trace = clamp((t - timings.revealStart + 85 - entry.offset) / (timings.reveal + 240), 0, 1);
-      const destination = point(item, slot, entry.count, trace);
-      const x = entry.fromX + (destination.x - entry.fromX) * flight;
-      const y = entry.fromY + (destination.y - entry.fromY) * flight;
-      const entered = clamp((t - entry.offset) / 190, 0, 1);
-      const leaving = clamp((stage.duration - t) / 260, 0, 1);
-      move(a, x, y, (.35 + .62 * entered) * leaving);
-      sx += a.x; sy += a.y; count++;
+    const layouts = stage.items.map(layoutOf);
+    const positions = swarm.workFrame(stage.assignments, layouts, t,
+      {...timings, duration: stage.duration}, viewport());
+    let sx = 0, sy = 0;
+    positions.forEach((position, i) => {
+      const a = stage.assignments[i].a;
+      move(a, position.x, position.y, position.opacity);
+      sx += a.x;
+      sy += a.y;
     });
-    if (count) illuminate(sx / count, sy / count, .45);
+    if (positions.length) illuminate(sx / positions.length, sy / positions.length, .43);
     stage.items.forEach((item, i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
       const box = guides[i];
-      const rect = bounds[i];
+      const rect = layouts[i].rect;
       if (!rect) return;
       box.style.transform = 'translate3d(' + rect.left + 'px,' + rect.top + 'px,0)';
       box.style.width = rect.width + 'px';
@@ -367,13 +343,12 @@
     const t = clamp((now - camera.start) / camera.duration, 0, 1);
     const eased = easeInOut(t);
     scrollTo({top: camera.from + (camera.to - camera.from) * eased, behavior: 'instant'});
-    agents.forEach((a, i) => {
-      const angle = i * 2.39996 + eased * .72;
-      const destX = innerWidth * (.49 + .31 * Math.cos(angle));
-      const destY = innerHeight * (.47 + .29 * Math.sin(angle));
-      const start = camera.agents[i];
-      move(a, start.x + (destX - start.x) * easeSoft(t),
-        start.y + (destY - start.y) * easeSoft(t), .34 + .3 * Math.sin(Math.PI * t));
+    const formations = swarm.cameraFrame(agents, camera.agents, t, viewport());
+    formations.forEach((position, i) => {
+      const a = agents[i];
+      a.formation = position.formation;
+      a.task = 'travel';
+      move(a, position.x, position.y, position.opacity);
     });
     illuminate(innerWidth * .5, innerHeight * (.43 + .1 * eased), .15);
     if (t >= 1) {
@@ -564,7 +539,7 @@
   // Deep links and restored browser positions should never be dragged back
   // through the hero animation; keep those visitors in control immediately.
   const deepLink = !!location.hash && location.hash !== '#home';
-  const startManual = reduceMotion || deepLink || scrollY > 80;
+  const startManual = reduceMotion || !swarm || deepLink || scrollY > 80;
   if (!startManual && document.hidden) introPausedAt = performance.now();
   if (!startManual) {
     try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
