@@ -23,10 +23,12 @@ const server=createServer(async(req,res)=>{
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const url=process.env.PORTFOLIO_URL || 'http://127.0.0.1:'+server.address().port+'/';
 const scenarios=[
+ {name:'ios',engine:webkit,width:390,height:844,touch:true},
  {name:'android',engine:chromium,width:390,height:844,touch:true},
- {name:'desktop',engine:chromium,width:1440,height:900,touch:false},
- {name:'ios',engine:webkit,width:390,height:844,touch:true}
-];
+ {name:'desktop',engine:chromium,width:1440,height:900,touch:false}
+].filter(spec=>!process.env.CONSTRUCTION_SCENARIO ||
+  spec.name===process.env.CONSTRUCTION_SCENARIO);
+if(scenarios.length===0)throw Error('Unknown CONSTRUCTION_SCENARIO');
 const scenes=[
  {id:'chem',selector:'.project[data-project="chem"]'},
  {id:'reframe',selector:'.project[data-project="reframe"]'},
@@ -111,7 +113,8 @@ for(const spec of scenarios){
  }finally{await context?.close().catch(()=>{});await browser?.close().catch(()=>{});}
  report.scenarios.push(result);
 }
-await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));
+await writeFile(join(out,'report-'+(process.env.CONSTRUCTION_SCENARIO||'all')+'.json'),
+  JSON.stringify(report,null,2));
 server.close();
 console.log('CONSTRUCTION_GATE_SUMMARY',JSON.stringify({url,results:report.scenarios.map(x=>({name:x.name,passed:x.passed,scenes:x.scenes.length,error:x.error})),failures:report.failures}));
 if(report.failures.length)process.exitCode=1;
