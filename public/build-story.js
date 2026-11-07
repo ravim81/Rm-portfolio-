@@ -716,6 +716,47 @@
     schedule();
   }
 
+  // Deterministic visual QA: render the REAL production stage at requested
+  // times without relying on a remote browser runner to hit a 200ms window.
+  // This hook exists only when the test harness opted in before page load.
+  if (window.__PORTFOLIO_AUDIT__ && !reduceMotion && swarm) {
+    window.__portfolioAuditScene = (id,progress=.62) => {
+      if (!['chem','reframe','brand','discovery'].includes(id)) return null;
+      const el = document.querySelector('.project[data-project="'+id+'"]');
+      if (!el) return null;
+      if (frame) cancelAnimationFrame(frame);
+      frame=0;autoplay=false;enabled=true;
+      particleIntro?.end();introAvailable=false;introHandoff=true;
+      cursorTrails?.clear();restoreKinetic();sceneDirector?.clear();
+      animations.forEach(a=>{try{a.cancel()}catch{}});
+      animations=[];camera=null;stage=null;
+      clearGuides();
+      targets.forEach(revealImmediately);
+      el.classList.remove('build-complete','build-staging');
+      el.classList.add('build-pending');
+      document.documentElement.classList.remove('agent-camera-moving');
+      const old=el.getBoundingClientRect();
+      const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+      const y=clamp(scrollY+old.top-innerHeight*.25,0,max);
+      phase='working';
+      scrollTo({top:y,behavior:'instant'});
+      const item={el,kind:'project',done:false,revealAt:timings.revealStart};
+      const crew=Array.from({length:6},(_,i)=>agents[(stageCount*5+i)%agents.length]);
+      agents.forEach(a=>a.el.style.opacity='0');
+      const assignments=swarm.planStage([layoutOf(item)],crew,stageCount++,viewport());
+      assignments.forEach(a=>a.a.el.dataset.task=a.task);
+      sceneDirector?.start(item);
+      const now=performance.now();
+      stage={items:[item],assignments,start:now-clamp(progress,0,1.5)*timings.revealStart,
+        duration:timings.revealStart+timings.reveal+(compact?190:230)};
+      caption.textContent=sceneLabel(item);
+      showWork(now);
+      return {id,progress,crew:assignments.length,
+        pending:el.classList.contains('build-pending'),
+        drawing:document.querySelector('.director-draft')?.dataset.target};
+    };
+  }
+
   // The independent watchdog can safely release the page on animation errors.
   window.__portfolioStoryRecover = exploreFreely;
   targets.forEach(el => {
