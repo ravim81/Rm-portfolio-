@@ -249,10 +249,13 @@ async function motionPass(browser,label,device) {
     assert(!errors.length,'page errors after takeover: '+errors.join(' | '));
     // The control bar must actually work, including after manual takeover.
     await page.locator('.build-replay').click();
-    await page.waitForTimeout(450);
-    assert((await page.locator('.build-caption').textContent()).includes('ASSEMBLING') ||
-      (await page.locator('.build-caption').textContent()).includes('BUILDING'),
-      'replay did not restart the construction sequence');
+    await page.waitForFunction(()=>{
+      const title=document.querySelector('.hero h1');
+      const replay=document.querySelector('.build-replay');
+      return title?.classList.contains('build-pending') &&
+        !replay?.disabled && document.querySelector('.build-pause')?.disabled===false;
+    },null,{timeout:3000});
+    assert(!errors.length,'replay JavaScript error: '+errors.join(' | '));
     await page.locator('.build-pause').click();
     assert(await page.locator('.build-pause').getAttribute('aria-pressed')==='true',
       'Pause control did not set pressed state');
