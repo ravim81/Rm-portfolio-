@@ -411,7 +411,8 @@ body.agent-story-mode{background-color:#09090b}
   }
   .agent-story-mode .hero-copy {
     padding-top:clamp(102px,16svh,140px);
-    padding-bottom:380px;
+    padding-bottom:0;
+    min-height:max(750px,100svh);
     position:relative;
     z-index:3;
   }
