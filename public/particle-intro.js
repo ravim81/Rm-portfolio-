@@ -36,6 +36,7 @@
     let dust = [];
     let textPoints = [];
     let seed = 812967;
+    let fontRequest = 0;
     const rand = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       return seed / 4294967296;
@@ -97,10 +98,15 @@
       if (!buildTextMask()) return false;
 
       const budget = qualityBudget(width, navigator.deviceMemory, navigator.hardwareConcurrency);
+      // Shuffle the point map so each particle owns a distinct, evenly distributed letter pixel.
+      for (let j = textPoints.length - 1; j > 0; j--) {
+        const k = Math.floor(rand() * (j + 1));
+        [textPoints[j], textPoints[k]] = [textPoints[k], textPoints[j]];
+      }
       particles = [];
       // An emission point per cursor, distributed across the full word mask.
       for (let i = 0; i < budget; i++) {
-        const point = textPoints[Math.floor(rand() * textPoints.length)];
+        const point = textPoints[Math.floor((i + .5) * textPoints.length / budget) % textPoints.length];
         particles.push({
           tx:cx + point.x, ty:cy + point.y,
           accent:point.accent || (i % 23 === 0),
@@ -128,6 +134,14 @@
       canvas.style.display = 'block';
       canvas.style.opacity = '1';
       active = true;
+      // The display font may load a moment after deferred scripts; resample only before
+      // the main particle assembly to avoid a mid-animation wordmark jump.
+      const request = ++fontRequest;
+      if (document.fonts && document.fonts.load) {
+        document.fonts.load('900 160px Display').then(() => {
+          if (active && request === fontRequest && performance.now() - start < 520) rebuild();
+        }).catch(() => {});
+      }
       return true;
     }
 
@@ -196,14 +210,16 @@
       ctx.globalCompositeOperation = 'source-over';
     }
 
+    function shiftTime(delta) { start += Math.max(0, delta); }
     function end() {
+      fontRequest++;
       active = false;
       ctx.clearRect(0, 0, width, height);
       canvas.style.opacity = '0';
       canvas.style.display = 'none';
     }
     function destroy() {end();canvas.remove();}
-    return {begin,draw,end,destroy,qualityBudget};
+    return {begin,draw,end,destroy,shiftTime,qualityBudget};
   }
 
   window.createPortfolioParticleIntro = create;
