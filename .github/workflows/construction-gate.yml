@@ -36,3 +36,27 @@ jobs:
           path: test-results/construction-gate/
           retention-days: 7
           if-no-files-found: warn
+  published-construction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser runner
+        run: npm install --no-save playwright@1.56.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify the deployed Cloudflare portfolio constructs all four projects
+        env:
+          PORTFOLIO_URL: https://rm-portfolio-preview.mallaravikumar9618.workers.dev/
+        run: node scripts/construction-gate.mjs
+      - name: Upload published scene screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-construction-scene-evidence
+          path: test-results/construction-gate/
+          retention-days: 7
+          if-no-files-found: warn
