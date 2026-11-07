@@ -220,9 +220,13 @@
       assignments.push({
         a,index:chosen,item:spec.item,targetIndex:spec.targetIndex,
         slot:spec.slot,count:spec.count,task:spec.task,
-        fromX:a.x,fromY:a.y,
-        bendX:-dy/length*curve,bendY:dx/length*curve,
-        offset:(chosen%6)*12+spec.targetIndex*15
+        // A crew starts just OUTSIDE its own object, never across a previous
+        // section. This prevents pointers racing after content during camera travel.
+        fromX:clamp(spec.point.x + (spec.slot%2 ? 24 : -24), 12, vp.width-20),
+        fromY:clamp(spec.point.y - (vp.width<=640 ? 24 : 34), 32, vp.height-68),
+        bendX:-dy/length*Math.min(curve,8),
+        bendY:dx/length*Math.min(curve,8),
+        offset:(spec.slot%4)*16+spec.targetIndex*12
       });
     });
     assignments.sort((a,b)=>a.index-b.index);
