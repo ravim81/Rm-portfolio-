@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install browser test runner
-        run: npm install --no-save playwright@1.56.1
+        run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
       - name: Install Chromium, Firefox, WebKit and system libraries
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run desktop, tablet and phone browser audit
