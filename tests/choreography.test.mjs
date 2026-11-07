@@ -51,11 +51,11 @@ test('director builds project-specific task paths before native content reveal',
   for(const project of ['chem','reframe','brand','discovery']){
     assert.ok(director.includes(project+':'), 'Missing scene geometry for '+project);
   }
-  assert.match(director,/getPointAtLength/);
-  assert.match(director,/dataset\\.tasks/);
-  assert.match(source,/sceneDirector\\.render/);
-  assert.match(source,/sceneDirector\\.start/);
-  assert.match(source,/sceneDirector\\?\\.clear/);
+  assert.ok(director.includes('getPointAtLength'));
+  assert.ok(director.includes('dataset.tasks'));
+  assert.ok(source.includes('sceneDirector.render'));
+  assert.ok(source.includes('sceneDirector.start'));
+  assert.ok(source.includes('sceneDirector?.clear'));
   assert.ok(html.indexOf('scene-director.js')<html.indexOf('build-story.js'),
     'director must load before orchestration');
 });
