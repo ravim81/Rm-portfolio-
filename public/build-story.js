@@ -455,6 +455,7 @@
       lead.x = drawing.left + drawing.width * drawing.draw;
       lead.y = drawing.top + drawing.height;
     }
+    let sceneTips = null;
     if (sceneDirector && stage.items[0].kind === 'project') {
       const art = layouts[0].artRect || layouts[0].rect;
       const tips = sceneDirector.render({
@@ -462,6 +463,7 @@
         revealAt:stage.items[0].revealAt,crew:stage.assignments,
         viewport:viewport()
       });
+      sceneTips = tips;
       positions.forEach((position,i)=>{
         const slot=stage.assignments[i].slot;
         if(slot===0)return;
@@ -484,6 +486,36 @@
       sy += a.y;
     });
     if (positions.length) illuminate(sx / positions.length, sy / positions.length, .20);
+    // Optional release-gate evidence is sampled from the SAME animation frame
+    // that moves real cursor DOM nodes. Normal visitors incur zero recording.
+    if (window.__PORTFOLIO_AUDIT__ && sceneTips) {
+      const id = stage.items[0].el.dataset.project;
+      const samples = window.__portfolioSceneEvidence ||
+        (window.__portfolioSceneEvidence = []);
+      const previous = samples[samples.length-1];
+      if (!previous || previous.id !== id || t - previous.elapsed >= 45) {
+        const draft = layer.querySelector('.director-draft');
+        const offsets = [...(draft?.querySelectorAll('path')||[])]
+          .map(p=>Number(p.getAttribute('stroke-dashoffset')));
+        const distances = stage.assignments.map((entry,i)=>{
+          const tip = sceneTips[entry.slot];
+          if (!tip || entry.slot===0) return null;
+          return Math.hypot(entry.a.x-tip.x,entry.a.y-tip.y);
+        }).filter(x=>x!==null);
+        samples.push({
+          id,elapsed:t,progress:t/stage.items[0].revealAt,
+          phase:blueprint.dataset.phase,
+          pending:stage.items[0].el.classList.contains('build-pending'),
+          svgOpacity:Number(draft?.style.opacity||0),
+          strokes:offsets.filter(value=>Number.isFinite(value) && value<95).length,
+          cursorAttachments:distances.filter(d=>d<24).length,
+          cursorDistances:distances,
+          crew:stage.assignments.length,
+          pathCount:offsets.length,
+          blueprintTarget:blueprint.dataset.target
+        });
+      }
+    }
     stage.items.forEach((item,i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
     });
