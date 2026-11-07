@@ -104,16 +104,21 @@ for(const spec of scenarios){
      const agents=[...document.querySelectorAll('.build-agent')]
        .filter(a=>Number(getComputedStyle(a).opacity)>.18);
      const connected=paths.slice(1).reduce((count,p)=>{
-       const length=p.getTotalLength();
-       if(!length || Number(p.style.strokeDashoffset)>=95)return count;
-       const fraction=1-Number(p.style.strokeDashoffset)/100;
-       const tip=p.getPointAtLength(length*fraction);
-       const x=rect.left+rect.width*tip.x, y=rect.top+rect.height*tip.y;
-       const near=agents.some(a=>{
-         const r=a.getBoundingClientRect();
-         return Math.hypot(r.left-x,r.top-y)<32;
-       });
-       return count+(near?1:0);
+       try {
+         const length=p.getTotalLength();
+         const remaining=Number(p.style.strokeDashoffset);
+         if(!Number.isFinite(length)||length<=0||
+            !Number.isFinite(remaining)||remaining>=95)return count;
+         const fraction=Math.max(0,Math.min(1,1-remaining/100));
+         const tip=p.getPointAtLength(length*fraction);
+         if(!Number.isFinite(tip.x)||!Number.isFinite(tip.y))return count;
+         const x=rect.left+rect.width*tip.x, y=rect.top+rect.height*tip.y;
+         const near=agents.some(a=>{
+           const r=a.getBoundingClientRect();
+           return Math.hypot(r.left-x,r.top-y)<32;
+         });
+         return count+(near?1:0);
+       } catch {return count;}
      },0);
      return {target:draft.dataset.target,state:draft.dataset.state,
        progress:Number(draft.dataset.progress),tasks:Number(draft.dataset.tasks),
