@@ -187,7 +187,8 @@
     if (el.matches('.project')) return 'project';
     if (el.matches('.portrait,.manifesto')) return 'image';
     if (el.matches('.comparison')) return 'comparison';
-    if (el.matches('details,.filters,footer') || el.querySelector('form')) return 'rows';
+    if (el.matches('form') || el.querySelector('form')) return 'form';
+    if (el.matches('details,.filters,footer')) return 'rows';
     return 'text';
   }
   function keyframes(item) {
