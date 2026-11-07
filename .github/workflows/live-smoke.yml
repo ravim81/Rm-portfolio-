@@ -1,10 +1,16 @@
 name: Live Cloudflare browser smoke
 on:
   workflow_dispatch:
+  # Check the deployed Worker even when no source files have changed.
+  schedule:
+    - cron: '17 3 * * 1'
   push:
     paths:
       - 'scripts/live-smoke.mjs'
       - '.github/workflows/live-smoke.yml'
+concurrency:
+  group: portfolio-live-smoke
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
