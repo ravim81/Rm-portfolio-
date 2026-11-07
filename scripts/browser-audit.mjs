@@ -13,6 +13,7 @@ import {chromium,firefox,webkit} from 'playwright';
 const root=resolve(fileURLToPath(new URL('../public/',import.meta.url)));
 const out=resolve(fileURLToPath(new URL('../test-results/browser-audit/',import.meta.url)));
 await mkdir(out,{recursive:true});
+const axeSource=await readFile(fileURLToPath(new URL('../node_modules/axe-core/axe.min.js',import.meta.url)),'utf8');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.otf':'font/otf','.ttf':'font/ttf','.svg':'image/svg+xml'};
 const server=createServer(async(req,res)=>{
   try {
@@ -106,6 +107,26 @@ async function layoutPass(browser,label,device) {
     assert(result.subtitle && result.subtitle.right<=result.vw+4,'hero subtitle exceeds viewport');
     assert(result.contact?.height>0,'contact section is collapsed');
 
+    // WCAG automated audit on representative phone, tablet and desktop widths.
+    // Axe runs in the real browser engine rather than on parsed HTML alone.
+    if(['android-mobile','tablet-portrait','desktop'].includes(device.name)) {
+      await page.addScriptTag({content:axeSource});
+      const axe = await page.evaluate(async ()=> {
+        const results=await window.axe.run(document,{
+          runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}
+        });
+        return {violations:results.violations.map(v=>({
+          id:v.id,impact:v.impact,description:v.help,
+          nodes:v.nodes.slice(0,4).map(n=>n.target.join(' > '))
+        })),incomplete:results.incomplete.length,passes:results.passes.length};
+      });
+      record(label,device.name,'accessibility',{pass:!axe.violations.some(v=>
+        ['critical','serious'].includes(v.impact)),...axe});
+      const severe=axe.violations.filter(v=>['critical','serious'].includes(v.impact));
+      if(severe.length) {
+        report.failures.push(label+'/'+device.name+' accessibility: '+JSON.stringify(severe));
+      }
+    }
     // Run actual visitor actions, not just viewport measurements.
     if(device.width<=600){
       await page.locator('.menu-toggle').click();
