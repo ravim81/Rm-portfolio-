@@ -311,6 +311,7 @@
   function reveal(item) {
     if (item.done) return;
     item.done = true;
+    const fromPreview = item.el.classList.contains('build-staging');
     item.el.classList.remove('build-pending','build-staging');
     item.el.classList.add('build-complete');
     // Only selected headings get individual glyph construction; ordinary copy
@@ -319,7 +320,14 @@
       ?.filter(entry => entry.item === item)
       .map(entry => entry.a) || agents;
     if (!compact && item.kind === 'text') beginKinetic(item.el, builders, performance.now());
-    const animation = item.el.animate(keyframes(item), {
+    // Keep the preview visible while it resolves to finished UI. The old
+    // clip-from-zero reveal made a half-built card disappear and flash back.
+    const frames = fromPreview ? [
+      {opacity:item.kind === 'project' || item.kind === 'comparison' ? .46 : .43,
+       filter:'grayscale(.22)',transform:'none'},
+      {opacity:1,filter:'none',transform:'none'}
+    ] : keyframes(item);
+    const animation = item.el.animate(frames, {
       duration: timings.reveal,
       easing: 'cubic-bezier(.22,1,.36,1)',
       fill: 'both'
