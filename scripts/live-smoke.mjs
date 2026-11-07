@@ -68,8 +68,22 @@ for(const item of cases) {
   // Validate live menu and a modal in the real published environment.
   await page.locator('.build-manual').click();
   if(item.touch&&item.width<=600) {
+   const beforeMenu=await page.evaluate(()=>({
+     viewport:innerWidth,scrollY,expanded:document.querySelector('.menu-toggle')?.getAttribute('aria-expanded'),
+     className:document.querySelector('#primary-nav')?.className,
+     display:getComputedStyle(document.querySelector('#primary-nav')).display,
+     menuVisible:getComputedStyle(document.querySelector('.menu-toggle')).display
+   }));
    await page.locator('.menu-toggle').click();
-   if(!(await page.locator('#primary-nav').isVisible()))throw Error('Mobile navigation failed');
+   await page.waitForTimeout(125);
+   const afterMenu=await page.evaluate(()=>({
+     viewport:innerWidth,scrollY,expanded:document.querySelector('.menu-toggle')?.getAttribute('aria-expanded'),
+     className:document.querySelector('#primary-nav')?.className,
+     display:getComputedStyle(document.querySelector('#primary-nav')).display,
+     menuVisible:getComputedStyle(document.querySelector('.menu-toggle')).display
+   }));
+   if(!(await page.locator('#primary-nav').isVisible()))
+     throw Error('Mobile navigation failed '+JSON.stringify({beforeMenu,afterMenu,revision:header,errors}));
    await page.locator('#primary-nav a[href="#work"]').click();
   }
   await page.locator('.project[data-project="chem"]').click();
