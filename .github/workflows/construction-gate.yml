@@ -27,7 +27,11 @@ jobs:
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
       - name: Verify live construction against all four project cards
-        run: node scripts/construction-gate.mjs
+        run: |
+          set -e
+          for scenario in ios android desktop; do
+            CONSTRUCTION_SCENARIO="$scenario" node scripts/construction-gate.mjs
+          done
       - name: Upload each scene before and after reveal
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,7 +58,11 @@ jobs:
       - name: Verify the deployed Cloudflare portfolio constructs all four projects
         env:
           PORTFOLIO_URL: https://rm-portfolio-preview.mallaravikumar9618.workers.dev/
-        run: node scripts/construction-gate.mjs
+        run: |
+          set -e
+          for scenario in ios android desktop; do
+            CONSTRUCTION_SCENARIO="$scenario" node scripts/construction-gate.mjs
+          done
       - name: Upload published scene screenshots
         if: always()
         uses: actions/upload-artifact@v4
