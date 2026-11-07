@@ -6,3 +6,89 @@
 /* Reserve layout while the builder cursors arrive. */
 .build-pending{opacity:0!important;transition:none!important}.build-complete{opacity:1}.build-agent{z-index:2}.build-selection{z-index:1}.build-agent>span{box-shadow:0 2px 8px #0005}@media(prefers-reduced-motion:reduce){.build-pending{opacity:1!important}}
 .build-controls{max-width:calc(100vw - 20px)}@media(max-width:600px){.build-controls{flex-wrap:wrap;justify-content:center;gap:4px 8px;width:max-content;max-width:calc(100vw - 20px)}.build-caption{font-size:6px}.build-controls button{font-size:9px}.build-controls button+button{padding-left:8px}}
+
+
+/* 23-agent cinematic reveal — quiet light, crisp arrows, zero layout shifts. */
+html.agent-camera-moving{scroll-behavior:auto!important}
+body.agent-story-mode{background-color:#09090b}
+.agent-story-mode .hero:before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse 50% 65% at 70% 43%,rgba(197,29,54,.11),transparent 75%),
+    radial-gradient(ellipse 55% 50% at 11% 75%,rgba(245,64,84,.055),transparent 70%);
+  opacity:.9;
+}
+.agent-story-mode .hero-lines{opacity:.85}
+.agent-story-mode .project{
+  transition:transform .5s cubic-bezier(.22,1,.36,1),border-color .35s,box-shadow .5s;
+  box-shadow:0 18px 50px rgba(0,0,0,.13);
+}
+.agent-story-mode .project:hover{
+  box-shadow:0 24px 80px rgba(0,0,0,.32),0 0 36px rgba(242,53,77,.075);
+}
+.agent-layer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:35;isolation:isolate;contain:layout paint}
+.agent-stage-light{
+  position:absolute;left:0;top:0;width:480px;height:480px;
+  border-radius:50%;opacity:0;pointer-events:none;z-index:0;
+  background:radial-gradient(circle,rgba(237,50,75,.30) 0%,rgba(235,43,67,.11) 24%,rgba(134,25,53,.055) 42%,transparent 67%);
+  mix-blend-mode:screen;will-change:transform,opacity;
+}
+.build-agent{
+  position:absolute;left:0;top:0;width:18px;height:24px;
+  opacity:0;z-index:2;pointer-events:none;
+  color:var(--agent);will-change:transform,opacity;
+  filter:none;backface-visibility:hidden;
+  transform:translate3d(-50px,-50px,0);
+}
+.build-agent svg{display:block;width:18px;height:23px;overflow:visible;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.75))}
+.build-selection{
+  position:absolute;left:0;top:0;z-index:1;opacity:0;
+  border:1px solid rgba(255,93,115,.4);border-radius:2px;
+  background:linear-gradient(120deg,rgba(246,64,84,.022),transparent 56%);
+  box-shadow:0 0 0 1px rgba(255,75,102,.025);
+  transform:translate3d(-150vw,0,0);pointer-events:none;
+  will-change:transform,opacity;
+  transition:opacity .19s ease-out;
+}
+.build-selection i{
+  background:#101014;border:1px solid #ff6477;
+  width:5px;height:5px;
+}
+.build-controls{
+  padding:10px 14px;gap:12px;min-height:38px;
+  background:rgba(14,14,17,.87);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:100px;
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:0 8px 28px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.035);
+}
+.build-indicator{background:#ff526c;box-shadow:0 0 9px rgba(255,69,96,.6)}
+.build-caption{font-size:9px;letter-spacing:1.4px;color:#d2ced0;min-width:145px}
+.build-controls button{font-size:10px;cursor:pointer;color:#f0edf0}
+.build-controls button:focus-visible{
+  outline:2px solid #fa526b;outline-offset:4px;border-radius:2px;
+}
+.build-controls button:disabled{opacity:.45;cursor:default}
+.build-pending{opacity:0!important;pointer-events:none}
+.build-complete{opacity:1;pointer-events:auto}
+@media(max-width:900px){
+  .agent-stage-light{width:380px;height:380px;opacity:.3;mix-blend-mode:normal}
+  .build-caption{min-width:0}
+}
+@media(max-width:600px){
+  .build-controls{
+    padding:8px 11px;bottom:9px;gap:5px 9px;
+    width:max-content;max-width:calc(100vw - 14px);border-radius:18px
+  }
+  .build-caption{font-size:7px;letter-spacing:.55px}
+  .build-controls button{font-size:9px;min-height:26px}
+  .build-agent,.build-agent svg{width:13px;height:17px}
+  .build-selection{border-color:rgba(255,89,111,.3)}
+  .agent-stage-light{background:radial-gradient(circle,rgba(230,50,71,.17),transparent 65%)}
+}
+@media(prefers-reduced-motion:reduce){
+  .agent-layer{display:none!important}
+  .agent-stage-light{display:none!important}
+  .build-pending{opacity:1!important;pointer-events:auto}
+  .build-controls{background:#161619;-webkit-backdrop-filter:none;backdrop-filter:none}
+}
