@@ -35,10 +35,11 @@ test('visual effects do not intercept visitor input and support reduced motion',
 });
 test('the directed story frames the next content and never builds in blank space',()=>{
   assert.match(source,/r\.top < innerHeight \* \.44/);
-  assert.match(source,/selected\.forEach\(el=>el\.classList\.add\('build-staging'\)\)/);
+  assert.match(source,/const selected = \[primary\]/);
+  assert.doesNotMatch(source,/selected\.forEach\(el=>el\.classList\.add\('build-staging'\)\)/);
   assert.match(source,/const cinematicCard = upcoming\?\.matches\('\.project,\.comparison,\.manifesto'\)/);
   assert.match(source,/clamp\(\(innerHeight - rect\.height\) \* \.48/);
   assert.match(source,/: innerHeight \* \(compact \? \.18 : \.20\)/);
-  assert.match(styles,/\.build-pending\.build-staging/);
+  assert.match(styles,/\.build-pending/);
   assert.doesNotMatch(source,/\.hero-bottom, \.section-heading > \*/);
 });
