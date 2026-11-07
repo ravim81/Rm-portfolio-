@@ -89,7 +89,7 @@ test('quality budget scales for viewport and device; reduced motion skips canvas
 });
 
 test('visitor interruption, pause, replay, and accessibility remain wired',()=>{
-  assert.match(story,/if \(phase === 'intro'\) exploreFreely\(\)/);
+  assert.match(story,/if \(enabled\) exploreFreely\(\)/);
   assert.match(story,/particleIntro\?\.end\(\)/);
   assert.match(story,/particleIntro\?\.shiftTime\(paused\)/);
   assert.match(story,/introStart = performance\.now\(\)/);
