@@ -209,6 +209,30 @@ async function motionPass(browser,label,device) {
     assert(!active.recovered,'watchdog recovered rather than running animation');
     assert(active.caption!=='EXPLORE AT YOUR PACE','autoplay abandoned unexpectedly');
 
+    // The new direction must SHOW a meaningful construction scaffold, not
+    // merely pass animation syntax while cursors wander around finished copy.
+    await page.waitForFunction(()=>{
+      const scaffold=document.querySelector('.build-blueprint');
+      return scaffold && Number(getComputedStyle(scaffold).opacity)>.45;
+    },{timeout:14000});
+    const direction=await page.evaluate(()=>{
+      const scaffold=document.querySelector('.build-blueprint');
+      const activeAgents=[...document.querySelectorAll('.build-agent')]
+        .filter(el=>Number(getComputedStyle(el).opacity)>.18).length;
+      const label=scaffold.querySelector('.blueprint-index')?.textContent||'';
+      return {scaffoldOpacity:Number(getComputedStyle(scaffold).opacity),
+        activeAgents,label,hiddenText:document.querySelectorAll('.kinetic-source-hidden').length,
+        totalAgents:document.querySelectorAll('.build-agent').length};
+    });
+    assert(direction.label.includes('FRAME') || direction.label.includes('PLAN'),
+      'scaffold is not explaining its construction phase');
+    assert(direction.activeAgents<= (device.width<=640?6:10),
+      'too many agents obscure the content: '+direction.activeAgents);
+    if(device.width<=640)
+      assert(direction.hiddenText===0,'mobile Canvas lettering hides original copy');
+    await page.screenshot({path:join(out,label+'-'+device.name+'-STORY.png'),
+      fullPage:false,animations:'allow'});
+
     // Manual user input must return usable HTML and clear artificial text hiding.
     // Mobile WebKit does not implement wheel events. Exercise a genuine touch
     // on phones/tablets; desktop gets the standard wheel takeover.
