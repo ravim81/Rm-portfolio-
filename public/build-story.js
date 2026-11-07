@@ -153,6 +153,9 @@
   function clearGuides() {
     guides.forEach(box => { box.style.opacity = '0'; });
     blueprint.style.opacity = '0';
+    blueprint.dataset.phase = 'IDLE';
+    blueprint.dataset.target = '';
+    blueprint.dataset.progress = '0';
   }
   const sceneNames = {
     chem:'CHEMLABS / LAB ASSEMBLY',
@@ -188,11 +191,19 @@
     blueprint.style.height = h + 'px';
     blueprint.dataset.kind = item.kind;
     const action = elapsed < 380 ? 'PLAN' : elapsed < item.revealAt ? 'FRAME' : 'REVEAL';
+    blueprint.dataset.phase = action;
+    blueprint.dataset.target = item.el.dataset?.project || item.el.id || item.el.className?.split?.(' ')?.[0] || item.kind;
     blueprintLabel.textContent = sceneLabel(item) + '  ·  ' + action;
     blueprint.style.opacity = String(elapsed < item.revealAt - 100
       ? Math.min(1,(elapsed-120)/210)
       : Math.max(0,1 - (elapsed - item.revealAt + 100) / 390));
-    blueprintTrack.style.transform = 'scaleX(' + clamp(elapsed / item.revealAt,0,1) + ')';
+    // The visible drafting stroke starts AFTER cursors have arrived; never
+    // let a loading bar race ahead of its builders.
+    const draw = clamp((elapsed - timings.approach * .48) /
+      Math.max(1, item.revealAt - timings.approach * .48), 0, 1);
+    blueprintTrack.style.transform = 'scaleX(' + draw + ')';
+    blueprint.dataset.progress = draw.toFixed(3);
+    return {left,top:y,width:w,height:h,draw};
   }
   function restoreKinetic() {
     try { kinetic?.clear(); } catch {}
@@ -426,6 +437,16 @@
     const layouts = stage.items.map(layoutOf);
     const positions = swarm.workFrame(stage.assignments, layouts, t,
       {...timings, duration: stage.duration}, viewport());
+    // Draw the measured object outline before positioning the lead cursor.
+    // This makes the red construction stroke visibly originate from the crew.
+    const drawing = updateBlueprint(stage.items[0],layouts[0],t);
+    if (drawing && positions.length) {
+      const lead = positions[0];
+      // Lead builder's cursor tip follows the endpoint of the progress stroke.
+      // Fixed overlay positioning is viewport-relative like the measured art.
+      lead.x = drawing.left + drawing.width * drawing.draw;
+      lead.y = drawing.top + drawing.height;
+    }
     let sx = 0, sy = 0;
     positions.forEach((position, i) => {
       const a = stage.assignments[i].a;
@@ -437,9 +458,8 @@
     stage.items.forEach((item,i) => {
       if (!item.done && t >= item.revealAt) reveal(item);
     });
-    // The scaffold is dedicated to the primary focus, never overlaid on
-    // scattered text/controls from unrelated project blocks.
-    updateBlueprint(stage.items[0],layouts[0],t);
+    // The scaffold belongs only to the primary focus, never to a previously
+    // revealed project or unrelated navigation element.
     if (t >= stage.duration) finishStage();
   }
   function startCamera(now) {
