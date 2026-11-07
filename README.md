@@ -74,6 +74,30 @@ and uses the *same* requestAnimationFrame clock as the particle intro and trails
   deterministic plans, mobile viewports, separation, project-copy clearance,
   and intro/camera group formations.
 
+## Kinetic typography — cursor-built headlines
+
+`public/kinetic-typography.js` adds a Canvas 2D *visual-only* letter construction
+effect to selected headings. The semantic HTML, links, fonts, original text
+nodes, natural line wrapping, and accent spans remain untouched.
+
+- The particle-built `RAVI M.` hero wordmark is preserved. The next hero
+  headline and later section titles are assembled character by character.
+- DOM Ranges measure each glyph's real position, including explicit line
+  breaks and colored spans. Each glyph travels from a nearby assigned agent
+  through a short, restrained kinetic path before becoming real text.
+- Cursors, particles, trails, swarm formations, and kinetic typography share
+  the same animation controller and requestAnimationFrame. No new animation
+  package, renderer, or separate timer is needed for the visual effect.
+- Quality adapts to mobile, device memory, and CPU; at most two concurrent
+  headline effects are drawn on mobile and three on desktop.
+- Pause freezes the kinetic clock; replay and manual exploration restore all
+  headings; reduced-motion visitors see original text immediately.
+- Unsupported Canvas/Range or an animation failure falls back to ordinary
+  text reveals. The independent safety net also releases hidden headings.
+- Tests cover letter sampling, actual draw calls, semantic text preservation,
+  mobile limits, pause/resume, replay, failed rendering, and the complete
+  story's progression beyond the opening animation.
+
 ## Development
 
 Use Node 22 or newer. No npm dependencies are required.
