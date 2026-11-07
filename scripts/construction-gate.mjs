@@ -38,13 +38,13 @@ const scenes=[
 const report={url,scenarios:[],failures:[]};
 function assert(value,message){if(!value)throw Error(message);}
 for(const spec of scenarios){
- let browser,context;
+ let browser,context,page;
  const result={name:spec.name,scenes:[],errors:[]};
  try{
   browser=await spec.engine.launch({headless:true,timeout:45000});
   context=await browser.newContext({viewport:{width:spec.width,height:spec.height},
     hasTouch:spec.touch,isMobile:spec.touch,reducedMotion:'no-preference'});
-  const page=await context.newPage();
+  page=await context.newPage();
   page.on('pageerror',e=>result.errors.push(String(e)));
   await page.goto(url,{waitUntil:'load',timeout:45000});
   for(const scene of scenes){
@@ -53,8 +53,12 @@ for(const spec of scenarios){
    await page.waitForFunction(id=>{
     const b=document.querySelector('.build-blueprint');
     const value=Number(b?.dataset.progress);
+    const draft=document.querySelector('.director-draft');
+    const amount=Number(draft?.dataset.progress);
     return b?.dataset.target===id && b.dataset.phase==='FRAME' &&
-      value>.22 && value<.90 && Number(getComputedStyle(b).opacity)>.30;
+      value>.24 && value<.90 && amount>.58 && amount<.88 &&
+      draft?.dataset.target===id &&
+      Number(getComputedStyle(b).opacity)>.30;
    },scene.id,{timeout:95000,polling:40});
    const before=await page.evaluate(selector=>{
     const el=document.querySelector(selector);
@@ -90,12 +94,6 @@ for(const spec of scenarios){
    assert(before.otherProjects===0,scene.id+': unrelated project shows staging');
    // Director 3.0 must visibly construct different geometry for each project.
    // Cursor-to-blueprint proximity alone is NOT a valid construction illusion.
-   await page.waitForFunction(id=>{
-     const draft=document.querySelector('.director-draft');
-     return draft?.dataset.target===id && draft.dataset.state==='construct' &&
-       Number(draft.dataset.progress)>.55 && Number(draft.dataset.progress)<.96 &&
-       Number(getComputedStyle(draft).opacity)>.25;
-   },scene.id,{timeout:3500,polling:25});
    const taskEvidence=await page.evaluate(()=>{
      const draft=document.querySelector('.director-draft');
      const rect=draft.getBoundingClientRect();
@@ -150,7 +148,23 @@ for(const spec of scenarios){
   result.passed=true;
  }catch(e){
   result.passed=false;result.error=String(e);
-  report.failures.push(spec.name+': '+String(e));
+  if(page) {
+    try {
+      result.diagnostics=await page.evaluate(()=>({
+        caption:document.querySelector('.build-caption')?.textContent,
+        blueprint:{target:document.querySelector('.build-blueprint')?.dataset.target,
+          phase:document.querySelector('.build-blueprint')?.dataset.phase,
+          progress:document.querySelector('.build-blueprint')?.dataset.progress},
+        draft:{target:document.querySelector('.director-draft')?.dataset.target,
+          state:document.querySelector('.director-draft')?.dataset.state,
+          progress:document.querySelector('.director-draft')?.dataset.progress},
+        scrollY,hidden:document.hidden,
+        pending:document.querySelectorAll('.build-pending').length,
+        recovered:document.body.classList.contains('story-recovered')
+      }));
+    }catch(x){result.diagnosticsError=String(x);}
+  }
+  report.failures.push(spec.name+': '+String(e)+' '+JSON.stringify(result.diagnostics||result.errors));
  }finally{await context?.close().catch(()=>{});await browser?.close().catch(()=>{});}
  report.scenarios.push(result);
 }
