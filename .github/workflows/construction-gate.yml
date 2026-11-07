@@ -11,6 +11,9 @@ on:
       - 'public/**'
       - 'scripts/construction-gate.mjs'
       - '.github/workflows/construction-gate.yml'
+concurrency:
+  group: cursor-construction-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
