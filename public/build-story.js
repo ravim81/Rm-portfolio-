@@ -84,9 +84,14 @@
   const particleIntro = !reduceMotion && window.createPortfolioParticleIntro
     ? window.createPortfolioParticleIntro({layer, heroHeading: document.querySelector('.hero h1')})
     : null;
+  const cursorTrails = !reduceMotion && window.createPortfolioCursorTrails && typeof Path2D === 'function'
+    ? window.createPortfolioCursorTrails({layer, agentCount: agents.length})
+    : null;
   let introAvailable = false;
   let introHandoff = false;
   let introPausedAt = 0;
+  let pausedAt = 0;
+  let hiddenSuspended = false;
 
   let enabled = !reduceMotion;
   let autoplay = !reduceMotion;
@@ -136,7 +141,10 @@
         easing:'cubic-bezier(.22,1,.36,1)',
         fill:'both'
       });
-      animation.onfinish = () => animation.cancel();
+      animation.onfinish = () => {
+        animation.cancel();
+        animations = animations.filter(item => item !== animation);
+      };
       animations.push(animation);
     });
   }
@@ -223,7 +231,10 @@
       easing: 'cubic-bezier(.22,1,.36,1)',
       fill: 'both'
     });
-    animation.onfinish = () => animation.cancel(); // Preserve native hover and interactive transforms.
+    animation.onfinish = () => {
+      animation.cancel(); // Preserve native hover and interactive transforms.
+      animations = animations.filter(item => item !== animation);
+    };
     animations.push(animation);
   }
   function revealImmediately(el) {
@@ -329,6 +340,7 @@
     if (scrollY >= max - 3) {
       targets.forEach(revealImmediately);
       enabled = false;
+      cursorTrails?.clear();
       phase = 'done';
       autoplay = false;
       caption.textContent = 'PORTFOLIO / COMPLETE';
@@ -371,7 +383,7 @@
   }
   function tick(now) {
     frame = 0;
-    if (!enabled || document.hidden) return;
+    if (!enabled || document.hidden || !autoplay) return;
     if (phase === 'intro') {
       if (!autoplay) return; // Suspend the shared clock while the intro is paused.
       showIntro(now);
@@ -382,37 +394,54 @@
       illuminate(lightX, lightY, .14);
       if (now >= holdUntil) chooseStage(now);
     } else if (phase === 'idle' && autoplay) chooseStage(now);
+    cursorTrails?.draw(now, agents, phase);
     if (['intro','working','camera','hold'].includes(phase) || (phase === 'idle' && autoplay)) schedule();
   }
   function schedule() {
     if (!frame && enabled && !document.hidden) frame = requestAnimationFrame(tick);
   }
+  // Pause freezes all clocks and active reveals; resuming carries on at the
+  // same position instead of rushing through stages skipped during a pause.
   function setAutoplay(value) {
-    if (!enabled) return;
-    autoplay = value;
-    if (phase === 'intro') {
-      if (!value) introPausedAt = performance.now();
-      else if (introPausedAt) {
-        const paused = performance.now() - introPausedAt;
-        introStart += paused;
-        particleIntro?.shiftTime(paused);
+    if (!enabled || autoplay === value) return;
+    const now = performance.now();
+    if (!value) {
+      pausedAt = now;
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      cursorTrails?.clear();
+      animations.forEach(animation => {
+        try { if (animation.playState === 'running') animation.pause(); } catch {}
+      });
+    } else {
+      const delta = pausedAt ? Math.max(0, now - pausedAt) : 0;
+      if (phase === 'intro') {
+        introStart += delta;
+        particleIntro?.shiftTime(delta);
         introPausedAt = 0;
+      } else if (phase === 'working' && stage) {
+        stage.start += delta;
+      } else if (phase === 'hold') {
+        holdUntil += delta;
+      } else if (phase === 'camera' && camera) {
+        camera.start += delta;
       }
+      pausedAt = 0;
+      animations.forEach(animation => {
+        try { if (animation.playState === 'paused') animation.play(); } catch {}
+      });
     }
-    if (!autoplay && phase === 'camera') {
-      camera = null;
-      phase = 'idle';
-      document.documentElement.classList.remove('agent-camera-moving');
-    }
+    autoplay = value;
     caption.textContent = autoplay ? 'AUTOPLAY / 23 AGENTS' : 'TOUR PAUSED';
     pause.textContent = autoplay ? 'Pause' : 'Resume';
-    pause.setAttribute('aria-pressed', String(!autoplay));
+    pause.setAttribute('aria-pressed', String(!value));
     if (autoplay) {
-      if (phase === 'idle' || phase === 'done') chooseStage(performance.now());
+      if (phase === 'idle' || phase === 'done') chooseStage(now);
       schedule();
     }
   }
   function exploreFreely() {
+    cursorTrails?.clear();
     particleIntro?.end();
     introAvailable = false;
     introHandoff = true;
@@ -433,6 +462,7 @@
   }
   function replay() {
     if (reduceMotion) return;
+    cursorTrails?.clear();
     animations.forEach(a => { try { a.cancel(); } catch {} });
     animations = [];
     stage = null;
@@ -443,6 +473,8 @@
     phase = 'intro';
     introHandoff = false;
     introPausedAt = 0;
+    pausedAt = 0;
+    hiddenSuspended = false;
     pause.disabled = false;
     pause.textContent = 'Pause';
     pause.setAttribute('aria-pressed', 'false');
@@ -469,20 +501,17 @@
   controls.querySelector('.build-manual').addEventListener('click', exploreFreely);
   pause.addEventListener('click', () => setAutoplay(!autoplay));
   ['wheel','touchstart'].forEach(type => addEventListener(type, () => {
-    if (phase === 'intro') exploreFreely();
-    else if (autoplay) setAutoplay(false);
+    if (enabled) exploreFreely();
   }, {passive:true}));
   addEventListener('keydown', e => {
     if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)) {
-      if (phase === 'intro') exploreFreely();
-      else if (autoplay) setAutoplay(false);
+      if (enabled) exploreFreely();
     }
   });
   document.addEventListener('pointerdown', e => {
     if (!e.target.closest('.build-controls') &&
         e.target.closest('a,button,.project,details,input,textarea,select')) {
-      if (phase === 'intro') exploreFreely();
-      else if (autoplay) setAutoplay(false);
+      if (enabled) exploreFreely();
     }
   });
   let scrollTick = 0;
@@ -505,24 +534,28 @@
     if (document.hidden) {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      // Background tabs pause their clock rather than silently skipping the intro.
+      cursorTrails?.clear();
       if (phase === 'intro') {
-        if (!introPausedAt) introPausedAt = performance.now();
+        if (autoplay && !introPausedAt) introPausedAt = performance.now();
         return;
       }
-      if (stage) finishStage();
-      setAutoplay(false);
+      if (autoplay) {
+        hiddenSuspended = true;
+        setAutoplay(false);
+      }
     } else if (enabled) {
       if (phase === 'intro') {
         if (autoplay && introPausedAt) {
-          const paused = performance.now() - introPausedAt;
+          const paused = Math.max(0, performance.now() - introPausedAt);
           introStart += paused;
           particleIntro?.shiftTime(paused);
           introPausedAt = 0;
         }
         if (autoplay) schedule();
-      } else {
-        chooseStage(performance.now());
+      } else if (hiddenSuspended) {
+        hiddenSuspended = false;
+        setAutoplay(true);
+      } else if (autoplay) {
         schedule();
       }
     }
