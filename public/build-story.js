@@ -203,9 +203,7 @@
   function beginKinetic(container, builders, now) {
     // Narrow-screen Canvas glyph overlays crossed native text as the camera
     // moved. Use the accessible, crisp original headline on mobile instead.
-    // Original DOM typography is more legible than overlapping Canvas copies.
-    if (!kinetic || kineticDisabled) return false;
-    return false;
+    if (compact || !kinetic || kineticDisabled) return false;
     try { return kinetic.start(container, builders, now); }
     catch {
       kineticDisabled = true;
