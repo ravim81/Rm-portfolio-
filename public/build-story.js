@@ -475,6 +475,8 @@
     schedule();
   }
 
+  // The independent watchdog can safely release the page on animation errors.
+  window.__portfolioStoryRecover = exploreFreely;
   targets.forEach(el => {
     if (enabled) el.classList.add('build-pending');
     else revealImmediately(el);
