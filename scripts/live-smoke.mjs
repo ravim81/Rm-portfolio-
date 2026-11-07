@@ -88,8 +88,28 @@ for(const item of cases) {
     throw Error('Mobile glyph overlay hides original text');
   await page.screenshot({path:'test-results/live-smoke/'+item.name+'-construction.png',
     fullPage:false});
-  // Validate live menu and a modal in the real published environment.
+  // Genuine visitor takeover on the live Worker. Avoid clicking an active
+  // project card (which correctly opens a dialog and hides tour controls).
+  if(item.touch)await page.touchscreen.tap(8,Math.round(item.height*.71));
+  else await page.mouse.wheel(0,320);
+  await page.waitForTimeout(180);
+  const takeover=await page.evaluate(()=>({
+    label:document.querySelector('.build-caption')?.textContent,
+    pending:document.querySelectorAll('.build-pending').length,
+    previews:document.querySelectorAll('.build-staging').length,
+    modal:document.querySelector('#project-dialog')?.open||false
+  }));
+  if(takeover.label!=='EXPLORE AT YOUR PACE'||takeover.pending||takeover.previews||takeover.modal)
+    throw Error('Real-device takeover failed '+JSON.stringify(takeover));
+  await page.locator('.build-replay').click();
+  if(await page.locator('.build-pause').isDisabled())
+    throw Error('Replay did not re-enable Pause');
+  await page.locator('.build-pause').click();
+  if(await page.locator('.build-pause').getAttribute('aria-pressed')!=='true')
+    throw Error('Pause did not freeze the animation');
+  await page.locator('.build-pause').click();
   await page.locator('.build-manual').click();
+  // Validate live menu and a modal in the real published environment.
   if(item.touch&&item.width<=600) {
    const beforeMenu=await page.evaluate(()=>({
      viewport:innerWidth,scrollY,expanded:document.querySelector('.menu-toggle')?.getAttribute('aria-expanded'),
@@ -115,7 +135,7 @@ for(const item of cases) {
   if(!(await page.locator('#project-dialog').evaluate(e=>e.open)))throw Error('Project dialog failed');
   await page.locator('.dialog-close').click();
   await page.screenshot({path:'test-results/live-smoke/'+item.name+'.png',fullPage:false});
-  results.push({case:item.name,pass:true,revision:header,view,directed});
+  results.push({case:item.name,pass:true,revision:header,view,directed,takeover});
   await context.close();
  }catch(e){
   failures.push({case:item.name,error:String(e).slice(0,700)});
