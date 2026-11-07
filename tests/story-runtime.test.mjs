@@ -26,6 +26,8 @@ function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=fal
       closest(sel){return sel==='.hero'&&hero?{}:null;},
       querySelector(sel) {
         if(sel in controls)return controls[sel];
+        if(sel==='.blueprint-index')return {textContent:''};
+        if(sel==='.blueprint-track i')return {style:{transform:''}};
         if(type==='project') {
           if(sel==='.project-art')return element('art',{left:60,top:260,width:430,height:240});
           if(sel==='.project-info')return element('info',{left:60,top:510,width:430,height:90});
@@ -145,9 +147,9 @@ test('kinetic typography begins during hero handoff and shares the existing cloc
   for(const width of [390,1200]){
     const app=createRuntime({width,kinetic:true});
     app.advance(0,4900);
-    assert.ok(app.kineticStats.starts.some(x=>x.el===app.targets[1]),
-      'hero h2 must be assembled, not skipped: '+width);
-    assert.ok(app.kineticStats.draws>20,'letters use the existing frame clock');
+    assert.equal(app.kineticStats.starts.some(x=>x.el===app.targets[1]),width>640,
+      'native text must replace the glitchy Canvas glyphs on mobile: '+width);
+    assert.ok(app.kineticStats.draws>20,'kinetic renderer shares one frame clock');
     assert.ok(app.targets[0].classList.contains('build-complete'));
     assert.ok(app.targets[1].classList.contains('build-complete'));
   }
