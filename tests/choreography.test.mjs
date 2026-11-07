@@ -16,8 +16,8 @@ test('agent choreography is valid browser JavaScript with exactly 23 roles',()=>
 });
 
 test('reveals start after cursor approach and retain visitor controls',()=>{
-  assert.match(source,/revealStart:\s*compact \? 835 : 880/);
-  assert.match(source,/approach:\s*compact \? 610 : 560/);
+  assert.match(source,/revealStart:\s*compact \? 1060 : 1120/);
+  assert.match(source,/approach:\s*compact \? 710 : 690/);
   assert.match(source,/requestAnimationFrame/);
   assert.match(source,/stage\.items\.forEach/);
   assert.match(source,/focusin/);
