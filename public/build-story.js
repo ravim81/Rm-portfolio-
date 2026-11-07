@@ -79,7 +79,14 @@
   });
   const caption = controls.querySelector('.build-caption');
   const pause = controls.querySelector('.build-pause');
-  const initialTime = performance.now();
+  let introStart = performance.now();
+  const heroNodes = targets.filter(el => el.closest('.hero'));
+  const particleIntro = !reduceMotion && window.createPortfolioParticleIntro
+    ? window.createPortfolioParticleIntro({layer, heroHeading: document.querySelector('.hero h1')})
+    : null;
+  let introAvailable = false;
+  let introHandoff = false;
+  let introPausedAt = 0;
 
   let enabled = !reduceMotion;
   let autoplay = !reduceMotion;
@@ -108,16 +115,71 @@
   function clearGuides() {
     guides.forEach(box => { box.style.opacity = '0'; });
   }
-  function showIntro(now) {
-    const t = clamp((now - initialTime) / timings.gather, 0, 1);
-    const width = innerWidth, height = innerHeight;
-    agents.forEach((a, i) => {
-      const angle = i * 2.39996 + t * .55;
-      const radius = (19 + Math.sqrt(i / roles.length) * (compact ? 84 : 156)) * (.35 + .65 * easeSoft(t));
-      move(a, width * .51 + Math.cos(angle) * radius, height * .47 + Math.sin(angle) * radius * .66, .24 + .72 * easeOut(t));
+  // The wordmark first exists as luminous particles. As it travels into the
+  // exact hero heading position, the real HTML fades into place underneath.
+  function handoffHero(animated = true) {
+    if (introHandoff) return;
+    introHandoff = true;
+    heroNodes.forEach((el, i) => {
+      revealImmediately(el);
+      if (!animated) return;
+      const portrait = el.matches('.portrait');
+      const heading = el.matches('h1');
+      const frames = portrait
+        ? [{opacity:0,clipPath:'inset(11% 9% 0 12%)',transform:'translateX(18px) scale(1.025)'},
+           {opacity:1,clipPath:'inset(0 0 0 0)',transform:'none'}]
+        : [{opacity:0,transform:heading?'none':'translateY(13px)'},
+           {opacity:1,transform:'none'}];
+      const animation = el.animate(frames,{
+        duration:portrait ? 850 : 570,
+        delay:heading ? 50 : portrait ? 170 : 120 + i * 52,
+        easing:'cubic-bezier(.22,1,.36,1)',
+        fill:'both'
+      });
+      animation.onfinish = () => animation.cancel();
+      animations.push(animation);
     });
-    illuminate(width * .5, height * .47, .34 * t);
-    if (t >= 1) chooseStage(now);
+  }
+  function finishIntro(now) {
+    particleIntro?.end();
+    introAvailable = false;
+    handoffHero(false);
+    phase = 'hold';
+    holdUntil = now + (compact ? 680 : 850);
+    caption.textContent = 'AUTOPLAY / 23 AGENTS';
+  }
+  function showIntro(now) {
+    if (!autoplay) return;
+    const elapsed = Math.max(0, now - introStart);
+    const gather = easeSoft(elapsed / 1030);
+    const width = innerWidth, height = innerHeight;
+    const bandWidth = Math.min(width * .78, compact ? width * .88 : 850);
+    const bandLeft = (width - bandWidth) / 2;
+    // 8 / 8 / 7 builders distribute around the three wordmark regions.
+    agents.forEach((a, i) => {
+      const group = i < 8 ? 0 : i < 16 ? 1 : 2;
+      const index = i < 8 ? i : i < 16 ? i - 8 : i - 16;
+      const count = group === 2 ? 7 : 8;
+      const orbit = index / count * Math.PI * 2 - Math.PI / 2;
+      const anchorX = bandLeft + (group + .5) * bandWidth / 3 +
+        Math.cos(orbit) * (compact ? 25 : 53);
+      const anchorY = height * (compact ? .42 : .455) +
+        Math.sin(orbit) * (compact ? 57 : 92);
+      const initialAngle = i * 2.39996323;
+      const originX = width * .5 + Math.cos(initialAngle) * Math.min(width * .53, 540);
+      const originY = height * .47 + Math.sin(initialAngle) * height * .42;
+      const arrival = easeOut((elapsed - (i % 5) * 24) / 960);
+      const sway = Math.sin(elapsed * .0018 + orbit) * (1 - gather) * 8;
+      move(a, originX + (anchorX - originX) * arrival + sway,
+        originY + (anchorY - originY) * arrival,
+        .12 + .84 * easeOut(elapsed / 500));
+    });
+    illuminate(width * .5, height * .44,
+      elapsed < 2230 ? .10 + .30 * easeOut(elapsed / 1100) : .13);
+    if (introAvailable) particleIntro.draw(now, agents);
+    if (elapsed >= (introAvailable ? 2320 : 850)) handoffHero(true);
+    if (elapsed >= (introAvailable ? 3090 : 1470)) finishIntro(now);
+    else caption.textContent = introAvailable ? 'ASSEMBLING / RAVI M.' : 'BUILDING / 23 AGENTS';
   }
   function kind(el) {
     if (el.matches('.project')) return 'project';
@@ -310,7 +372,10 @@
   function tick(now) {
     frame = 0;
     if (!enabled || document.hidden) return;
-    if (phase === 'intro') showIntro(now);
+    if (phase === 'intro') {
+      if (!autoplay) return; // Suspend the shared clock while the intro is paused.
+      showIntro(now);
+    }
     else if (phase === 'working') showWork(now);
     else if (phase === 'camera') showCamera(now);
     else if (phase === 'hold') {
@@ -325,6 +390,15 @@
   function setAutoplay(value) {
     if (!enabled) return;
     autoplay = value;
+    if (phase === 'intro') {
+      if (!value) introPausedAt = performance.now();
+      else if (introPausedAt) {
+        const paused = performance.now() - introPausedAt;
+        introStart += paused;
+        particleIntro?.shiftTime(paused);
+        introPausedAt = 0;
+      }
+    }
     if (!autoplay && phase === 'camera') {
       camera = null;
       phase = 'idle';
@@ -339,6 +413,9 @@
     }
   }
   function exploreFreely() {
+    particleIntro?.end();
+    introAvailable = false;
+    introHandoff = true;
     autoplay = false;
     enabled = false;
     if (frame) cancelAnimationFrame(frame);
@@ -364,6 +441,8 @@
     enabled = true;
     autoplay = true;
     phase = 'intro';
+    introHandoff = false;
+    introPausedAt = 0;
     pause.disabled = false;
     pause.textContent = 'Pause';
     pause.setAttribute('aria-pressed', 'false');
@@ -375,11 +454,10 @@
     scrollTo({top:0,behavior:'instant'});
     agents.forEach(a => { a.x = innerWidth * .5; a.y = innerHeight * .47; });
     clearGuides();
-    // Give a short reset breath, not a second long loading screen.
-    const restart = performance.now();
-    phase = 'working';
-    chooseStage(restart + 220);
-    if (stage) stage.start = restart + 220;
+    // Rebuild the exact same particle-to-wordmark intro on every replay.
+    introStart = performance.now();
+    try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
+    catch { introAvailable = false; }
     schedule();
   }
 
@@ -391,14 +469,21 @@
   controls.querySelector('.build-manual').addEventListener('click', exploreFreely);
   pause.addEventListener('click', () => setAutoplay(!autoplay));
   ['wheel','touchstart'].forEach(type => addEventListener(type, () => {
-    if (autoplay) setAutoplay(false);
+    if (phase === 'intro') exploreFreely();
+    else if (autoplay) setAutoplay(false);
   }, {passive:true}));
   addEventListener('keydown', e => {
-    if (autoplay && ['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)) setAutoplay(false);
+    if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' ','Tab','Escape'].includes(e.key)) {
+      if (phase === 'intro') exploreFreely();
+      else if (autoplay) setAutoplay(false);
+    }
   });
   document.addEventListener('pointerdown', e => {
-    if (autoplay && !e.target.closest('.build-controls') &&
-        e.target.closest('a,button,.project,details,input,textarea,select')) setAutoplay(false);
+    if (!e.target.closest('.build-controls') &&
+        e.target.closest('a,button,.project,details,input,textarea,select')) {
+      if (phase === 'intro') exploreFreely();
+      else if (autoplay) setAutoplay(false);
+    }
   });
   let scrollTick = 0;
   addEventListener('scroll', () => {
@@ -411,10 +496,14 @@
   }, {passive:true});
   document.addEventListener('focusin', e => {
     const item = targets.find(el => el.contains(e.target));
-    if (item) revealImmediately(item);
+    if (item) {
+      if (phase === 'intro') exploreFreely();
+      else revealImmediately(item);
+    }
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      if (phase === 'intro') { exploreFreely(); return; }
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
       if (stage) finishStage();
@@ -424,6 +513,10 @@
       schedule();
     }
   });
+  if (!reduceMotion) {
+    try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
+    catch { introAvailable = false; }
+  }
   if (reduceMotion) {
     exploreFreely();
     controls.querySelector('.build-replay').disabled = true;
