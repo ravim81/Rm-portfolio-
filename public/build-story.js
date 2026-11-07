@@ -176,9 +176,13 @@
     const left = Math.max(8, frame.left - inset);
     const top = Math.max(34, frame.top - inset);
     const w = Math.max(20, Math.min(innerWidth - left - 8, frame.width + inset * 2));
-    const h = item.kind === 'text' ? Math.min(26, Math.max(14,frame.height * .18))
+    // A typography blueprint follows the actual heading (not the entire
+    // section container). The label sits ABOVE the title; the progress rule
+    // runs below its baseline rather than through unrelated body copy.
+    const y = item.kind === 'text' ? Math.max(47, frame.top - 5) : top;
+    const h = item.kind === 'text'
+      ? Math.max(28, Math.min(innerHeight - y - 50, frame.height + 10))
       : Math.max(26, Math.min(innerHeight - top - 55, frame.height + inset * 2));
-    const y = item.kind === 'text' ? Math.min(innerHeight - 54, frame.bottom + 5) : top;
     blueprint.style.transform = 'translate3d(' + left + 'px,' + y + 'px,0)';
     blueprint.style.width = w + 'px';
     blueprint.style.height = h + 'px';
@@ -345,7 +349,14 @@
   // Measure each block once per frame. The swarm engine then works entirely
   // in plain geometry, without repeatedly reading the DOM for 23 cursors.
   function layoutOf(item) {
-    const rect = item.el.getBoundingClientRect();
+    const container = item.el.getBoundingClientRect();
+    const title = item.kind === 'text'
+      ? item.el.matches('h1,h2,h3') ? item.el
+        : item.el.querySelector('h1,h2,h3,.big-copy,summary')
+      : null;
+    const focusRect = title?.getBoundingClientRect();
+    const rect = focusRect && focusRect.width > 10 && focusRect.height > 10
+      ? focusRect : container;
     const art = item.kind === 'project'
       ? item.el.querySelector('.project-art')?.getBoundingClientRect()
       : null;
