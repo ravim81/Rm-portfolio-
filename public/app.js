@@ -1,6 +1,15 @@
 const $=(s)=>document.querySelector(s);const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 if(!reduced){document.body.classList.add('js-motion');const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}})},{threshold:.06});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el))}
-const menu=$('.menu-toggle');menu.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));$('nav').classList.toggle('open',open);menu.textContent=open?'Close −':'Menu +'});document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',()=>{menu.setAttribute('aria-expanded','false');$('nav').classList.remove('open');menu.textContent='Menu +'}));
+const menu=$('.menu-toggle');
+function setMenu(open){
+  menu.setAttribute('aria-expanded',String(open));
+  menu.setAttribute('aria-label',open?'Close navigation':'Open navigation');
+  $('#primary-nav').classList.toggle('open',open);
+  menu.textContent=open?'Close −':'Menu +';
+}
+menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='true'));
+document.querySelectorAll('#primary-nav a').forEach(a=>a.addEventListener('click',()=>setMenu(false)));
+addEventListener('resize',()=>{if(innerWidth>600&&menu.getAttribute('aria-expanded')==='true')setMenu(false)},{passive:true});
 let ticking=false;function updateScroll(){const max=document.documentElement.scrollHeight-innerHeight;$('.progress').style.transform=`scaleX(${max>0?scrollY/max:0})`;ticking=false}addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(updateScroll);ticking=true}},{passive:true});updateScroll();
 if(matchMedia('(pointer:fine)').matches&&!reduced){const cursor=$('#cursor');addEventListener('pointermove',e=>{cursor.style.display='flex';cursor.style.transform=`translate(${e.clientX}px,${e.clientY}px) translate(-50%,-50%)`},{passive:true});document.addEventListener('mouseleave',()=>cursor.style.display='none');document.querySelectorAll('.project').forEach(el=>{el.addEventListener('pointerenter',()=>cursor.classList.add('on-project'));el.addEventListener('pointerleave',()=>cursor.classList.remove('on-project'))})}
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button))});document.querySelectorAll('.project').forEach(card=>{card.hidden=button.dataset.filter!=='all'&&card.dataset.category!==button.dataset.filter;if(!card.hidden)card.classList.add('visible')})}));
