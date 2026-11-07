@@ -67,10 +67,11 @@ for(const spec of scenarios){
      await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-building.png'),animations:'allow'});
      captured=true;
    }
-   await page.waitForFunction(selector=>
-     document.querySelector(selector)?.classList.contains('build-complete'),
-     scene.selector,{timeout:10000,polling:40});
-   await page.waitForTimeout(310);
+   await page.waitForFunction(selector=>{
+     const card=document.querySelector(selector);
+     return card?.classList.contains('build-complete') &&
+       Number(getComputedStyle(card).opacity)>.82;
+   },scene.selector,{timeout:10000,polling:40});
    const evidence=await page.evaluate(({id,selector})=>{
      const card=document.querySelector(selector);
      const frame=card.getBoundingClientRect();
