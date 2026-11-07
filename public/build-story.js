@@ -371,7 +371,8 @@
       autoplay = false;
       caption.textContent = 'PORTFOLIO / COMPLETE';
       pause.textContent = 'Tour complete';
-      pause.setAttribute('aria-pressed', 'true');
+      pause.disabled = true;
+      pause.setAttribute('aria-pressed', 'false');
       agents.forEach(a => a.el.style.opacity = '0');
       illuminate(innerWidth / 2, innerHeight / 2, 0);
       return;
