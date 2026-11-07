@@ -10,7 +10,7 @@
     'Detail','Frame','Depth','Craft','Flow','Space','Rhythm','Explore',
     'Compose','Color','Research','Prototype','Interact','Polish','Finish'
   ];
-  const palette = ['#ff536b','#f5ebe4','#78d8ff','#fc6680','#b8abff','#e8e1d7','#80eadb'];
+  const palette = ['#fa566f','#eee8e3','#e6a0ab','#c4bfc0','#ff6a7f','#e6e1d9','#d4415c'];
   const timings = Object.freeze({
     approach: compact ? 710 : 690,
     revealStart: compact ? 1060 : 1120,
@@ -149,10 +149,10 @@
     blueprint.style.opacity = '0';
   }
   const sceneNames = {
-    chem:'CONSTRUCTING / A VIRTUAL LAB',
-    reframe:'REFRAMING / BEFORE TO AFTER',
-    brand:'DIRECTING / A PRODUCT FILM',
-    discovery:'MAPPING / USEFUL DISCOVERY'
+    chem:'CHEMLABS / LAB ASSEMBLY',
+    reframe:'REFRAME / BEFORE → AFTER',
+    brand:'BRANDSPOOL / FILM SET',
+    discovery:'DISCOVERY / NODE MAP'
   };
   function sceneLabel(item) {
     const project = item.el.dataset?.project;
@@ -177,7 +177,8 @@
     blueprint.style.width = w + 'px';
     blueprint.style.height = h + 'px';
     blueprint.dataset.kind = item.kind;
-    blueprintLabel.textContent = sceneLabel(item);
+    const action = elapsed < 380 ? 'PLAN' : elapsed < item.revealAt ? 'FRAME' : 'REVEAL';
+    blueprintLabel.textContent = sceneLabel(item) + '  ·  ' + action;
     blueprint.style.opacity = String(elapsed < item.revealAt - 100
       ? Math.min(1,(elapsed-120)/210)
       : Math.max(0,1 - (elapsed - item.revealAt + 100) / 390));
