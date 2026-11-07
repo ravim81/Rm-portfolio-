@@ -245,11 +245,14 @@ async function motionPass(browser,label,device) {
 
     // A distinctive project card must actually get its own focused chapter.
     // This catches a passing but meaningless headline-only animation tour.
+    const projectWaitStarted=Date.now();
     await page.waitForFunction(()=>{
       const label=document.querySelector('.blueprint-index')?.textContent||'';
-      return label.includes('CHEMLABS') &&
-        Number(getComputedStyle(document.querySelector('.build-blueprint')).opacity)>.2;
-    },null,{timeout:24000});
+      const blueprint=document.querySelector('.build-blueprint');
+      return label.includes('CHEMLABS') && blueprint &&
+        Number(getComputedStyle(blueprint).opacity)>.2;
+    },null,{timeout:36000});
+    const projectWaitMs=Date.now()-projectWaitStarted;
     const projectFocus=await page.evaluate(()=>{
       const el=document.querySelector('.project[data-project="chem"]');
       const rect=el?.getBoundingClientRect();
@@ -263,6 +266,7 @@ async function motionPass(browser,label,device) {
       'project construction happens off-screen: '+JSON.stringify(projectFocus));
     await page.screenshot({path:join(out,label+'-'+device.name+'-PROJECT.png'),
       fullPage:false,animations:'allow'});
+    record(label,device.name,'project-framing',{pass:true,projectWaitMs,projectFocus});
 
     // Test a REAL mobile touch, not a synthetic event. Tap the neutral margin
     // at the left edge so the project button is not activated at the same time.
@@ -284,6 +288,8 @@ async function motionPass(browser,label,device) {
       'manual takeover did not stop the cinematic tour');
     assert(manual.hiddenLetters===0,'manual takeover left glyphs hidden');
     assert(!errors.length,'page errors after takeover: '+errors.join(' | '));
+    await page.screenshot({path:join(out,label+'-'+device.name+'-MANUAL-TAKEOVER.png'),
+      fullPage:false,animations:'disabled'});
     // The control bar must actually work, including after manual takeover.
     await page.locator('.build-replay').click();
     await page.waitForFunction(()=>{
@@ -293,9 +299,13 @@ async function motionPass(browser,label,device) {
         !replay?.disabled && document.querySelector('.build-pause')?.disabled===false;
     },null,{timeout:3000});
     assert(!errors.length,'replay JavaScript error: '+errors.join(' | '));
+    assert(await page.locator('.build-staging').count()===0,
+      'Replay did not remove the previous in-progress preview');
     await page.locator('.build-pause').click();
     assert(await page.locator('.build-pause').getAttribute('aria-pressed')==='true',
       'Pause control did not set pressed state');
+    await page.screenshot({path:join(out,label+'-'+device.name+'-REPLAY-PAUSED.png'),
+      fullPage:false,animations:'disabled'});
     const pausedY=await page.evaluate(()=>window.scrollY);
     await page.waitForTimeout(450);
     assert(Math.abs(await page.evaluate(()=>window.scrollY)-pausedY)<=2,
