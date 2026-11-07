@@ -52,23 +52,24 @@ for(const spec of scenarios){
    // An ephemeral construction-frame capture is useful for human review,
    // but engine timing MUST be validated from samples collected on each RAF.
    let captured=false;
-   try{
-     await page.waitForFunction(id=>{
-       const draft=document.querySelector('.director-draft');
-       return draft?.dataset.target===id &&
-         draft.dataset.state==='construct' &&
-         Number(draft.dataset.progress)>.12 &&
-         Number(draft.dataset.progress)<.96;
-     },scene.id,{timeout:17000,polling:20});
+   // Do not block on a screenshot window after the card has already
+   // completed; that used to let WebKit scroll the scene offscreen.
+   const state=await page.waitForFunction(({id,selector})=>{
+     const draft=document.querySelector('.director-draft');
+     const amount=Number(draft?.dataset.progress);
+     if(draft?.dataset.target===id && draft.dataset.state==='construct' &&
+         amount>.12 && amount<.96)return 'building';
+     if(document.querySelector(selector)?.classList.contains('build-complete'))
+       return 'completed';
+     return false;
+   },scene,{timeout:55000,polling:40});
+   if(await state.jsonValue()==='building'){
      await page.screenshot({path:join(out,spec.name+'-'+scene.id+'-building.png'),animations:'allow'});
      captured=true;
-   }catch{
-     // WebKit may advance an entire short scene between remote test polls.
-     // Persisted real-frame evidence below is the release authority.
    }
    await page.waitForFunction(selector=>
      document.querySelector(selector)?.classList.contains('build-complete'),
-     scene.selector,{timeout:50000,polling:50});
+     scene.selector,{timeout:10000,polling:40});
    await page.waitForTimeout(310);
    const evidence=await page.evaluate(({id,selector})=>{
      const card=document.querySelector(selector);
