@@ -115,3 +115,23 @@ body.agent-story-mode{background-color:#09090b}
 @media (prefers-reduced-motion:reduce) {
   .particle-intro-canvas {display:none!important;}
 }
+
+
+/* Motion II — short, fading red / silver cursor ribbons.
+   All trails share one Canvas 2D surface; the real page stays interactive. */
+.cursor-trails-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: block;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+.agent-layer .build-selection { z-index: 3; }
+.agent-layer .build-agent { z-index: 4; }
+@media (prefers-reduced-motion: reduce) {
+  .cursor-trails-canvas { display: none !important; }
+}
