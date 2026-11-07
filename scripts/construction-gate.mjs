@@ -80,7 +80,7 @@ for(const spec of scenarios){
      return {
        id,samples:trace.length,
        early:trace.some(x=>x.progress<.30 && x.pending),
-       framed:during.some(x=>x.blueprintTarget===id && x.phase==='FRAME'),
+       framed:trace.some(x=>x.blueprintTarget===id && x.pending),
        drawing:during.some(x=>x.svgOpacity>.40 && x.strokes>=3 && x.pathCount===6),
        attached:during.some(x=>x.cursorAttachments>=2 && x.crew===6),
        progressRange:trace.length?[trace[0].progress,trace[trace.length-1].progress]:[],
