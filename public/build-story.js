@@ -105,6 +105,10 @@
   const swarm = !reduceMotion && window.createPortfolioSwarm
     ? window.createPortfolioSwarm({count: agents.length})
     : null;
+  // All construction paths and cursor tasks share this same animation frame.
+  // Missing SVG APIs never prevent the readable HTML portfolio from opening.
+  const sceneDirector = !reduceMotion && window.createPortfolioSceneDirector
+    ? window.createPortfolioSceneDirector({layer}) : null;
   // Kinetic lettering shares this controller's frame clock and stays optional:
   // a missing Canvas or browser API must never block the portfolio.
   const kinetic = !reduceMotion && window.createPortfolioKineticTypography
@@ -156,6 +160,7 @@
     blueprint.dataset.phase = 'IDLE';
     blueprint.dataset.target = '';
     blueprint.dataset.progress = '0';
+    sceneDirector?.clear();
   }
   const sceneNames = {
     chem:'CHEMLABS / LAB ASSEMBLY',
@@ -412,8 +417,9 @@
     }));
     // 23 agents still exist and all build the opening, but only a focused
     // construction crew moves during each readable portfolio chapter.
-    const crewSize = compact ? (items[0].kind === 'project' ? 6 : 4)
-      : (items[0].kind === 'project' ? 10 : 7);
+    // Six purposeful tasks are clearer than ten undirected arrows. The
+    // entire 23-agent cast still participates in the opening and rotation.
+    const crewSize = items[0].kind === 'project' ? 6 : (compact ? 4 : 6);
     const crew = Array.from({length:crewSize},(_,i) =>
       agents[(stageCount * 5 + i) % agents.length]);
     agents.forEach(a=>{if (!crew.includes(a)) a.el.style.opacity = '0';});
@@ -423,6 +429,8 @@
       entry.a.task = entry.task;
       entry.a.el.dataset.task = entry.task;
     });
+    if (sceneDirector && items[0].kind === 'project')
+      sceneDirector.start(items[0]);
     stage = {items,assignments,start:now,
       duration:timings.revealStart + (items.length-1)*timings.revealGap +
       timings.reveal + (compact?190:230)};
@@ -441,11 +449,32 @@
     // This makes the red construction stroke visibly originate from the crew.
     const drawing = updateBlueprint(stage.items[0],layouts[0],t);
     if (drawing && positions.length) {
-      const lead = positions[0];
-      // Lead builder's cursor tip follows the endpoint of the progress stroke.
-      // Fixed overlay positioning is viewport-relative like the measured art.
+      // The lead cursor constructs the selection baseline; five other agents
+      // draw distinct, project-specific geometry at measured path endpoints.
+      const lead = positions.find((_,i)=>stage.assignments[i].slot===0)||positions[0];
       lead.x = drawing.left + drawing.width * drawing.draw;
       lead.y = drawing.top + drawing.height;
+    }
+    if (sceneDirector && stage.items[0].kind === 'project') {
+      const art = layouts[0].artRect || layouts[0].rect;
+      const tips = sceneDirector.render({
+        item:stage.items[0],rect:art,elapsed:t,
+        revealAt:stage.items[0].revealAt,crew:stage.assignments,
+        viewport:viewport()
+      });
+      positions.forEach((position,i)=>{
+        const slot=stage.assignments[i].slot;
+        if(slot===0)return;
+        const tip=tips[slot];
+        if(!tip)return;
+        // A small, restrained entry offset moves into the exact drawing
+        // point instead of teleporting between unrelated content.
+        const arrival=clamp(t/(timings.approach*.65),0,1);
+        position.x=position.x*(1-arrival)+tip.x*arrival;
+        position.y=position.y*(1-arrival)+tip.y*arrival;
+        stage.assignments[i].a.el.dataset.task=tip.task.toLowerCase();
+        position.opacity*=.45+.55*clamp(t/240,0,1);
+      });
     }
     let sx = 0, sy = 0;
     positions.forEach((position, i) => {
@@ -599,6 +628,7 @@
   function exploreFreely() {
     restoreKinetic();
     cursorTrails?.clear();
+    sceneDirector?.clear();
     particleIntro?.end();
     introAvailable = false;
     introHandoff = true;
@@ -621,6 +651,7 @@
     if (reduceMotion) return;
     restoreKinetic();
     cursorTrails?.clear();
+    sceneDirector?.clear();
     animations.forEach(a => { try { a.cancel(); } catch {} });
     animations = [];
     stage = null;
