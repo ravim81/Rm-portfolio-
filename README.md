@@ -98,6 +98,47 @@ nodes, natural line wrapping, and accent spans remain untouched.
   mobile limits, pause/resume, replay, failed rendering, and the complete
   story's progression beyond the opening animation.
 
+## Cross-browser quality gate
+
+Automated browser coverage uses Playwright in Chromium, Firefox and WebKit
+(the browser engines behind Chrome/Edge, Firefox and Safari). The matrix
+tests 12 viewport configurations: small/standard/large phones, a foldable,
+landscape phone, compact and full tablets, phone desktop-site mode, laptop,
+desktop, and large desktop.
+
+- `scripts/browser-audit.mjs` runs responsive layout, image, no-horizontal-
+  overflow, interactive project dialogs, filter, mobile menu, comparison
+  slider, accordion and contact-brief checks. It also runs an axe-core
+  WCAG 2.1 A/AA audit on representative mobile, tablet and desktop views.
+- It runs real 23-agent autoplay, manual takeover, replay, pause and resume
+  tests on representative devices, with screenshot and JSON report artifacts.
+- `.github/workflows/browser-audit.yml` tests the checked-out source on
+  every relevant change.
+- `scripts/live-smoke.mjs` and `.github/workflows/live-smoke.yml` exercise
+  the **public deployed Cloudflare Worker** in Chromium mobile/desktop,
+  WebKit mobile and Firefox desktop.
+- `.github/workflows/live-matrix.yml` additionally runs the full browser
+  matrix against the deployed Worker; it is kept separate from the local
+  test so that deployment-specific caching/assets cannot be mistaken for
+  source-level failures.
+
+Local execution, after installing Playwright + axe-core and its browser
+binaries:
+
+```sh
+npm install --no-save playwright@1.56.1 axe-core@4.10.3
+npx playwright install chromium firefox webkit
+node scripts/browser-audit.mjs
+PORTFOLIO_URL=https://rm-portfolio-preview.mallaravikumar9618.workers.dev/ node scripts/browser-audit.mjs
+node scripts/live-smoke.mjs
+```
+
+This automation is a broad **browser-engine regression test**, not a claim
+that every physical Android/iOS device or operating system is tested. Actual
+device GPU frame rates, screen-reader interaction and human visual review
+remain important final checks. The automated accessibility checker may mark
+some cases as `incomplete` and they require manual inspection.
+
 ## Development
 
 Use Node 22 or newer. No npm dependencies are required.
