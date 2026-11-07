@@ -355,6 +355,7 @@
     pause.disabled = true;
   }
   function replay() {
+    if (reduceMotion) return;
     animations.forEach(a => { try { a.cancel(); } catch {} });
     animations = [];
     stage = null;
@@ -425,6 +426,7 @@
   });
   if (reduceMotion) {
     exploreFreely();
+    controls.querySelector('.build-replay').disabled = true;
     caption.textContent = 'REDUCED MOTION / MANUAL';
   } else {
     schedule();
