@@ -353,3 +353,48 @@ body.agent-story-mode{background-color:#09090b}
     opacity:1!important;filter:none!important;
   }
 }
+
+
+/* Scene Director 3.0 — real task paths, not generic loading blocks.
+   Cursors follow these stroked vectors in the same compositor layer. */
+.agent-layer .director-draft {
+  z-index:4;
+  overflow:visible;
+  pointer-events:none;
+  contain:paint;
+  filter:drop-shadow(0 0 3px rgba(244,87,112,.19));
+}
+.director-draft path {
+  fill:none;
+  stroke:#fb7185;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  transition:none;
+}
+.director-draft path:nth-child(2) {stroke:#ece4e1;}
+.director-draft path:nth-child(3) {stroke:#ff9f92;}
+.director-draft path:nth-child(4) {stroke:#9fa9bd;}
+.director-draft path:nth-child(5) {stroke:#f6cdd2;}
+.director-draft path:nth-child(6) {stroke:#f86278;}
+.director-task-label {
+  position:absolute;
+  top:0;left:0;
+  z-index:4;
+  pointer-events:none;
+  opacity:0;
+  font:700 9px/1.4 Arial,Helvetica,sans-serif;
+  letter-spacing:1px;
+  color:#fbd9de;
+  background:rgba(13,14,20,.82);
+  padding:3px 7px;
+  border-left:2px solid #fb637c;
+  white-space:nowrap;
+  text-shadow:0 1px 5px #08090c;
+}
+@media(max-width:640px) {
+  .agent-layer .director-draft {filter:none;}
+  .director-task-label {font-size:8px;letter-spacing:.6px;padding:2px 5px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .director-draft,.director-task-label {display:none!important;}
+}
