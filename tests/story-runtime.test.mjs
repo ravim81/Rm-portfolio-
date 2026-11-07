@@ -91,7 +91,7 @@ function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=fal
     navigator:{deviceMemory:8,hardwareConcurrency:8},
     innerWidth:width,innerHeight:800,
     scrollY:0,location:{hash:''},
-    matchMedia:()=>({matches:reduced}),
+    matchMedia:query=>({matches:query.includes('prefers-reduced-motion')?reduced:query.includes('max-width: 640px')?width<=640:false}),
     Path2D:undefined,
     addEventListener:(type,cb)=>{events[type]=cb;},
     scrollTo(){},
