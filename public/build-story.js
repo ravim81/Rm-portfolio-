@@ -12,12 +12,12 @@
   ];
   const palette = ['#fa566f','#eee8e3','#e6a0ab','#c4bfc0','#ff6a7f','#e6e1d9','#d4415c'];
   const timings = Object.freeze({
-    approach: compact ? 710 : 690,
-    revealStart: compact ? 1060 : 1120,
-    revealGap: compact ? 170 : 180,
-    reveal: compact ? 630 : 680,
-    linger: compact ? 1070 : 1170,
-    camera: compact ? 990 : 1100
+    approach: compact ? 570 : 610,
+    revealStart: compact ? 780 : 860,
+    revealGap: compact ? 120 : 140,
+    reveal: compact ? 610 : 670,
+    linger: compact ? 720 : 860,
+    camera: compact ? 890 : 1020
   });
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   const easeOut = n => 1 - Math.pow(1 - clamp(n, 0, 1), 4);
@@ -26,13 +26,19 @@
   // A single engine owns content visibility; app.js's generic scroll reveals are disabled.
   document.body.classList.remove('js-motion');
   document.body.classList.add('agent-story-mode');
-  const selector = '.hero-copy > *, .portrait, .hero-bottom, .section-heading > *, .filters, .project, .work-note, .about-title > *, .about-copy > *, .comparison, .steps article, .capabilities > .reveal, .cap-list details, .manifesto, .lab-rows details, .contact > .eyebrow, .contact-grid > .reveal, footer';
+  // One meaningful story beat per section/card. Tiny notes, filters, footer
+  // metadata and individual rows stay ordinary HTML instead of creating
+  // several seconds of empty choreography around each tiny element.
+  const selector = '.hero-copy > *, .portrait, .section-heading, .project, .about-title, .about-copy, .comparison, .steps article, .capabilities > .reveal, .cap-list, .manifesto, .lab-rows, .contact-grid, footer';
   const targets = Array.from(document.querySelectorAll(selector))
     .filter(el => !(el.parentElement && el.parentElement.closest('.project')));
   const visible = el => {
     if (el.hidden || el.closest('[hidden]')) return false;
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && r.bottom > 85 && r.top < innerHeight - 55;
+    // A visible sliver near the bottom isn't a stage. Focus needs a real,
+    // readable piece of content in the upper/middle viewport.
+    return r.width > 0 && r.height > 0 &&
+      r.bottom > innerHeight * .19 && r.top < innerHeight * .44;
   };
 
   const controls = document.createElement('div');
@@ -301,7 +307,7 @@
   function reveal(item) {
     if (item.done) return;
     item.done = true;
-    item.el.classList.remove('build-pending');
+    item.el.classList.remove('build-pending','build-staging');
     item.el.classList.add('build-complete');
     // Only selected headings get individual glyph construction; ordinary copy
     // and interactive cards preserve their existing reveal and hover behavior.
@@ -321,7 +327,7 @@
     animations.push(animation);
   }
   function revealImmediately(el) {
-    el.classList.remove('build-pending');
+    el.classList.remove('build-pending','build-staging');
     el.classList.add('build-complete');
   }
   function finishStage() {
@@ -375,6 +381,9 @@
     const companions = visual ? [] : available.slice(1)
       .filter(sameParent).slice(0,compact?1:2);
     const selected = [primary,...companions];
+    // A faint preview shows the actual object about to be constructed.
+    // The viewer no longer stares at an empty screen with moving cursors.
+    selected.forEach(el=>el.classList.add('build-staging'));
     const items = selected.map((el,i) => ({
       el,kind:kind(el),done:false,
       revealAt:timings.revealStart + i*timings.revealGap
@@ -394,7 +403,7 @@
     });
     stage = {items,assignments,start:now,
       duration:timings.revealStart + (items.length-1)*timings.revealGap +
-      timings.reveal + (compact?300:370)};
+      timings.reveal + (compact?190:230)};
     stageCount++;
     phase = 'working';
     cursorTrails?.clear();
@@ -439,16 +448,21 @@
       illuminate(innerWidth / 2, innerHeight / 2, 0);
       return;
     }
-    // Scroll towards the next unrevealed block instead of blindly skipping
-    // most of a viewport. It gives each project a deliberate camera landing.
+    // Reframe the NEXT real element at the reading position before any
+    // pointers appear. A short preview must not be built below the fold.
     const upcoming = targets.find(el =>
       !el.classList.contains('build-complete') && !el.hidden &&
-      el.getBoundingClientRect().bottom > 0);
-    const targetY = upcoming
-      ? scrollY + upcoming.getBoundingClientRect().top - innerHeight * (compact ? .17 : .22)
-      : scrollY + innerHeight * .66;
-    const step = Math.max(190,innerHeight * (compact ? .72 : .70));
-    const to = Math.min(max,Math.max(scrollY + 110, Math.min(scrollY + step,targetY)));
+      !el.closest('[hidden]'));
+    const rect = upcoming?.getBoundingClientRect();
+    const desiredTop = innerHeight * (compact ? .18 : .20);
+    const targetY = rect
+      ? scrollY + rect.top - desiredTop
+      : scrollY + innerHeight * .75;
+    // A direct but eased travel; unnecessary micro-scrolls used to leave
+    // empty black gaps between every label and actual project card.
+    const distance = Math.max(0, targetY - scrollY);
+    const step = Math.max(innerHeight * .55, Math.min(innerHeight * 1.65,distance));
+    const to = Math.min(max,Math.max(scrollY + 65,Math.min(scrollY + step,targetY)));
     camera = {
       from: scrollY, to, start: now, duration: timings.camera,
       agents: agents.map(a => ({x:a.x,y:a.y}))
