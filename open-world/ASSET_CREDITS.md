@@ -1,0 +1,3 @@
+# Asset credits
+
+The initial world is procedural and contains no downloaded third-party 3D assets or audio. When replacing placeholders, record the exact asset name, creator, source URL, licence, required attribution and local filename here. Preferred discovery sources: Kenney (CC0), Poly Pizza (verify each model's licence), and Sketchfab downloadable models filtered to CC0 or CC-BY with attribution.
