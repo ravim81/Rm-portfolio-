@@ -10,7 +10,8 @@
     if (recovered || document.hidden) return;
     const pending = document.querySelectorAll('.build-pending');
     const hiddenText = document.querySelectorAll('.kinetic-source-hidden');
-    if (!pending.length && !hiddenText.length) return;
+    const primer = document.documentElement.classList?.contains?.('hero-build-primed');
+    if (!pending.length && !hiddenText.length && !primer) return;
     recovered = true;
     try {
       if (typeof window.__portfolioStoryRecover === 'function') {
@@ -29,6 +30,7 @@
     document.querySelector('.agent-layer')?.remove();
     document.querySelector('.build-controls')?.remove();
     document.documentElement.classList.remove('agent-camera-moving');
+    document.documentElement.classList.remove('hero-build-primed');
     document.body.classList.add('story-recovered');
   }
 
@@ -49,7 +51,13 @@
       return;
     }
     const heroTitle = document.querySelector('.hero h1');
-    if (heroTitle?.classList.contains('build-pending')) release('intro-timeout');
+    const constructing = heroTitle?.dataset?.introState === 'constructing';
+    const primer = document.documentElement.classList?.contains?.('hero-build-primed');
+    // The native headline is not build-pending while its CSS mask advances.
+    // A stalled reveal must still unlock every pending section, not only the
+    // heading. The normal prepaint timer independently restores the headline.
+    if (heroTitle?.classList.contains('build-pending') || constructing || primer)
+      release('intro-timeout');
   }
 
   window.setTimeout(verifyIntro, 6500);
