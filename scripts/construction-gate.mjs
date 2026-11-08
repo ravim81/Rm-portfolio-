@@ -48,6 +48,8 @@ for(const spec of scenarios){
   await page.addInitScript(()=>{window.__PORTFOLIO_AUDIT__=true;});
   page.on('pageerror',e=>result.errors.push(String(e)));
   await page.goto(url,{waitUntil:'load',timeout:45000});
+  assert(await page.locator('.loader').count()===0,
+    spec.name+': duplicated RAVI M full-screen loader still exists');
   // Phase 1 gate: sample the REAL native hero animation at three controlled
   // times, before testing the four independent project scenes.
   const heroFrames=[];
