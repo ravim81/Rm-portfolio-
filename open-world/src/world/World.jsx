@@ -12,10 +12,41 @@ function Tower({position=[0,0,0],height=8}) {
  return <group position={position}>{[-1,1].flatMap((x)=>[-1,1].map(z=>beam(x*.95,z*.95,x*.17,z*.17,x+':'+z)))}{[.25,.48,.7,.9].map((v,i)=><mesh key={i} position={[0,height*v,0]}><torusGeometry args={[.28+(1-v)*.65,.055,6,12]}/><meshStandardMaterial color="#c28e70" metalness={.3}/></mesh>)}{[.3,.52,.73].map((v,i)=><group key={i} position={[0,height*v,0]}><mesh rotation={[0,0,Math.PI/4]}><boxGeometry args={[2.1*(1-v*.7),.08,.08]}/><meshStandardMaterial color="#9d6e56"/></mesh><mesh rotation={[0,0,-Math.PI/4]}><boxGeometry args={[2.1*(1-v*.7),.08,.08]}/><meshStandardMaterial color="#9d6e56"/></mesh></group>)}<mesh position={[0,height+.4,0]}><cylinderGeometry args={[.035,.035,.8,6]}/><meshStandardMaterial color="#f7c99a"/></mesh></group>;
 }
 
-function Building({position,scale=[1,1,1],color='#435665'}) {
- return <RigidBody type="fixed" position={position}><CuboidCollider args={[2*scale[0],3*scale[1],2*scale[2]]}/><group scale={scale}><mesh castShadow receiveShadow position={[0,3,0]}><boxGeometry args={[4,6,4]}/><meshStandardMaterial color={color} roughness={.84}/></mesh><mesh position={[0,6.1,0]}><boxGeometry args={[4.2,.2,4.2]}/><meshStandardMaterial color="#667b86"/></mesh>{Array.from({length:3},(_,row)=>Array.from({length:2},(_,col)=><mesh key={row+'-'+col} position={[-.8+col*1.6,1.4+row*1.7,2.02]}><planeGeometry args={[.62,.72]}/><meshBasicMaterial color={(row+col)%3===0?'#ffd49b':'#91c4ce'}/></mesh>))}</group></RigidBody>;
+function Building({position,scale=[1,1,1],color='#435665',seed=0}) {
+ const floors=4+(seed%3), cols=3+(seed%2), width=4, depth=4, height=6;
+ const facade=color;
+ return <RigidBody type="fixed" position={position}><CuboidCollider args={[2*scale[0],3*scale[1],2*scale[2]]}/><group scale={scale}>
+  <mesh castShadow receiveShadow position={[0,3,0]}><boxGeometry args={[width,height,depth]}/><meshStandardMaterial color={facade} roughness={.62} metalness={.12}/></mesh>
+  <mesh position={[0,height+.12,0]} castShadow><boxGeometry args={[4.35,.24,4.35]}/><meshStandardMaterial color="#8b9695" roughness={.72}/></mesh>
+  <mesh position={[0,height+.34,0]}><boxGeometry args={[3.9,.2,3.9]}/><meshStandardMaterial color="#34434a" roughness={.7}/></mesh>
+  {Array.from({length:floors},(_,row)=>Array.from({length:cols},(_,col)=>{
+   const x=(col-(cols-1)/2)*1.18, y=.9+row*1.18, w=.66, h=.82;
+   return <group key={row+'-'+col} position={[x,y,2.025]}>
+    <mesh><boxGeometry args={[w+.14,h+.14,.09]}/><meshStandardMaterial color="#a7a092" roughness={.8}/></mesh>
+    <mesh position={[0,0,.055]}><boxGeometry args={[w,h,.035]}/><meshStandardMaterial color={row%3===0?'#b5d0d2':'#314a56'} metalness={.55} roughness={.22} emissive={row%3===0?'#172c34':'#000000'} emissiveIntensity={.18}/></mesh>
+    <mesh position={[0,-h*.53,.09]}><boxGeometry args={[w+.24,.09,.2]}/><meshStandardMaterial color="#b0a99a" roughness={.75}/></mesh>
+    <mesh position={[0,h*.53,.07]}><boxGeometry args={[w+.12,.07,.12]}/><meshStandardMaterial color="#b0a99a"/></mesh>
+   </group>;
+  }))}
+  {Array.from({length:3},(_,i)=><mesh key={'bal'+i} position={[0,.72+i*1.55,2.18]}><boxGeometry args={[4.05,.08,.32]}/><meshStandardMaterial color="#87908d" metalness={.35}/></mesh>)}
+  {[-1,1].map(side=><group key={side} position={[side*2.02,0,0]} rotation={[0,side*Math.PI/2,0]}>
+   {Array.from({length:3},(_,row)=>Array.from({length:2},(_,col)=><group key={row+'-'+col} position={[-.65+col*1.3,.9+row*1.5,0]}>
+    <mesh><boxGeometry args={[.68,.86,.06]}/><meshStandardMaterial color="#9ca6a1"/></mesh>
+    <mesh position={[0,0,.045]}><boxGeometry args={[.52,.68,.025]}/><meshStandardMaterial color="#54717c" metalness={.45} roughness={.25}/></mesh>
+   </group>))}
+  </group>)}
+  <mesh position={[0,height+.65,0]}><cylinderGeometry args={[.18,.18,.55,12]}/><meshStandardMaterial color="#d1b99b" roughness={.7}/></mesh>
+  <mesh position={[0,height+.96,0]}><sphereGeometry args={[.12,12,8]}/><meshStandardMaterial color="#c4a27e"/></mesh>
+ </group></RigidBody>;
 }
-function Tree({position}){return <group position={position}><mesh position={[0,1.1,0]}><cylinderGeometry args={[.12,.2,2.2,6]}/><meshStandardMaterial color="#72513c"/></mesh><mesh position={[0,2.5,0]}><coneGeometry args={[1.05,2.4,7]}/><meshStandardMaterial color="#547b69"/></mesh><mesh position={[0,3.45,0]}><coneGeometry args={[.72,1.8,7]}/><meshStandardMaterial color="#6f9878"/></mesh></group>;}
+function Tree({position,variant=0}) {
+ const greens=['#365d4b','#476c54','#54785a','#3d6658'];
+ return <group position={position}>
+  <mesh position={[0,1.15,0]} castShadow><cylinderGeometry args={[.16,.24,2.3,10]}/><meshStandardMaterial color="#574335" roughness={.94}/></mesh>
+  {[[0,2.55,0,1.05],[-.55,2.35,.12,.72],[.58,2.45,-.08,.78],[0,3.12,.1,.72],[-.35,2.9,-.45,.58],[.38,2.86,.42,.62]].map((p,i)=><mesh key={i} castShadow position={[p[0],p[1],p[2]]} scale={[p[3],p[3]*.83,p[3]]}><icosahedronGeometry args={[1,2]}/><meshStandardMaterial color={greens[(i+variant)%greens.length]} roughness={.96}/></mesh>)}
+  <mesh position={[0,1.95,0]}><cylinderGeometry args={[.8,.7,.18,12]}/><meshStandardMaterial color="#687d68" roughness={1}/></mesh>
+ </group>;
+}
 function StreetCar({position,color='#bd5b50'}){return <group position={position}><mesh position={[0,.62,0]} castShadow><boxGeometry args={[1.8,.72,3.4]}/><meshStandardMaterial color={color} metalness={.24} roughness={.42}/></mesh><mesh position={[0,1.12,-.15]}><boxGeometry args={[1.45,.65,1.55]}/><meshStandardMaterial color="#29404b" metalness={.5} roughness={.2}/></mesh>{[-.82,.82].flatMap(x=>[-1.1,1.1].map(z=><mesh key={x+':'+z} position={[x,.32,z]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.32,.32,.18,12]}/><meshStandardMaterial color="#15191e"/></mesh>))}</group>;}
 function TrafficCar({lane=-3,color='#e3a36f',offset=0}){const ref=useRef();useFrame(({clock})=>{if(ref.current)ref.current.position.z=-18-((clock.elapsedTime*7+offset)%120);});return <group ref={ref} position={[lane,0,0]}><StreetCar position={[0,0,0]} color={color}/></group>;}
 function CloudCluster({position}){return <group position={position}>{[[0,0,0,2.2],[1.6,.25,0,1.6],[-1.5,.15,.1,1.45],[.2,.6,-.5,1.25]].map((p,i)=><mesh key={i} position={[p[0],p[1],p[2]]} scale={[p[3],.65*p[3],.85*p[3]]}><sphereGeometry args={[1,12,10]}/><meshStandardMaterial color="#f2f5f1" roughness={1} transparent opacity={.78}/></mesh>)}</group>;}
@@ -43,19 +74,36 @@ function Vehicle({started,paused,stick,vehicleType,onPosition}) {
  });
  return <RigidBody ref={body} type="dynamic" colliders={false} position={[0,.65,8]} linearDamping={1.8} angularDamping={4} enabledRotations={[false,true,false]}><CuboidCollider args={vehicleType==='boat'?[1.1,.6,2.2]:[.55,.7,1.15]}/><group ref={group}>{vehicleType==='boat'?<BoatModel/>:<BikeModel/>}</group></RigidBody>;
 }
-function BikeModel(){return <group>
- <group>{[-.95,.95].map(z=><group key={z} position={[0,.52,z]} rotation={[0,Math.PI/2,0]}><mesh><torusGeometry args={[.49,.065,10,32]}/><meshStandardMaterial color="#11171d" roughness={.95}/></mesh><mesh><cylinderGeometry args={[.055,.055,.16,12]}/><meshStandardMaterial color="#aab4ba" metalness={.85}/></mesh>{Array.from({length:8},(_,i)=><mesh key={i} rotation={[0,0,i*Math.PI/4]}><boxGeometry args={[.018,.92,.018]}/><meshStandardMaterial color="#77858d" metalness={.7}/></mesh>)}</group>)}</group>
- <mesh position={[0,.74,0]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.045,.045,1.6,8]}/><meshStandardMaterial color="#bd3449" metalness={.48}/></mesh>
- <mesh position={[0,.82,.42]} rotation={[.45,0,0]}><cylinderGeometry args={[.04,.04,.95,8]}/><meshStandardMaterial color="#bd3449" metalness={.48}/></mesh>
- <mesh position={[0,.78,-.48]} rotation={[-.42,0,0]}><cylinderGeometry args={[.04,.04,.98,8]}/><meshStandardMaterial color="#bd3449" metalness={.48}/></mesh>
- <mesh position={[0,1.02,.42]}><boxGeometry args={[.52,.09,.16]}/><meshStandardMaterial color="#222a32"/></mesh>
- <mesh position={[0,1.16,-.91]}><boxGeometry args={[.72,.055,.08]}/><meshStandardMaterial color="#aeb8bd" metalness={.82}/></mesh>
- <mesh castShadow position={[0,1.48,.1]} rotation={[.3,0,0]}><capsuleGeometry args={[.25,.58,4,10]}/><meshStandardMaterial color="#a82d42" roughness={.86}/></mesh>
- <mesh castShadow position={[0,2.02,-.18]}><sphereGeometry args={[.27,16,12]}/><meshStandardMaterial color="#222b35" metalness={.3}/></mesh>
- <mesh position={[0,2.04,-.39]}><boxGeometry args={[.34,.12,.12]}/><meshStandardMaterial color="#6e9aa4" metalness={.5} roughness={.2}/></mesh>
- {[-1,1].map(side=><group key={side}><mesh position={[side*.19,1.42,-.48]} rotation={[.8,0,side*.45]}><capsuleGeometry args={[.09,.65,4,8]}/><meshStandardMaterial color="#a82d42"/></mesh><mesh position={[side*.2,.72,.18]} rotation={[-.65,0,side*.2]}><capsuleGeometry args={[.11,.62,4,8]}/><meshStandardMaterial color="#25313a"/></mesh></group>)}
- </group>;}
-
+function BikeModel(){ 
+ const tube=(from,to,r=.045,color='#b9434c')=>{const a=new THREE.Vector3(...from),b=new THREE.Vector3(...to),d=b.clone().sub(a);return <mesh key={from.join(',')+to.join(',')} position={a.clone().add(b).multiplyScalar(.5).toArray()} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize())}><cylinderGeometry args={[r,r,d.length(),10]}/><meshStandardMaterial color={color} metalness={.72} roughness={.28}/></mesh>;};
+ return <group>
+  {[-.95,.95].map(z=><group key={z} position={[0,.53,z]} rotation={[0,Math.PI/2,0]}>
+   <mesh castShadow><torusGeometry args={[.49,.055,12,48]}/><meshStandardMaterial color="#14191d" roughness={.92}/></mesh>
+   <mesh><torusGeometry args={[.405,.018,6,40]}/><meshStandardMaterial color="#a9b4b8" metalness={.85} roughness={.25}/></mesh>
+   {Array.from({length:16},(_,i)=><mesh key={i} rotation={[0,0,i*Math.PI/8]}><boxGeometry args={[.012,.92,.012]}/><meshStandardMaterial color="#b9c2c5" metalness={.8}/></mesh>)}
+   <mesh><cylinderGeometry args={[.055,.055,.2,16]}/><meshStandardMaterial color="#89969c" metalness={.9}/></mesh>
+  </group>)}
+  {tube([0,.53,-.95],[0,.53,.95],.035,'#9ca7aa')}
+  {tube([0,.53,-.95],[0,1.02,-.38])}{tube([0,1.02,-.38],[0,.53,.95])}{tube([0,.53,.95],[0,.53,-.95])}
+  {tube([0,1.02,-.38],[0,1.05,-.72])}{tube([0,1.05,-.72],[0,1.05,-.95],.035,'#d3d8d7')}
+  {tube([0,.53,.95],[0,1.08,.82],.035,'#aeb9bc')}
+  <mesh position={[0,1.1,-.4]}><boxGeometry args={[.46,.09,.17]}/><meshStandardMaterial color="#242a2e"/></mesh>
+  <mesh position={[0,1.1,.94]}><boxGeometry args={[.65,.055,.09]}/><meshStandardMaterial color="#aab4b8" metalness={.85}/></mesh>
+  <mesh position={[0,.48,0]}><cylinderGeometry args={[.045,.045,.2,12]}/><meshStandardMaterial color="#c2c9ca" metalness={.85}/></mesh>
+  <group>
+   <mesh castShadow position={[0,1.48,-.05]} rotation={[.12,0,0]}><capsuleGeometry args={[.25,.58,8,16]}/><meshStandardMaterial color="#263f58" roughness={.68}/></mesh>
+   <mesh castShadow position={[0,1.98,-.18]}><sphereGeometry args={[.255,24,16]}/><meshStandardMaterial color="#b77d5d" roughness={.85}/></mesh>
+   <mesh castShadow position={[0,2.12,-.18]}><sphereGeometry args={[.28,24,14,0,Math.PI*2,0,Math.PI*.52]}/><meshStandardMaterial color="#e0e5e5" metalness={.28} roughness={.32}/></mesh>
+   <mesh position={[0,2.02,-.4]}><boxGeometry args={[.31,.095,.08]}/><meshStandardMaterial color="#18252e" metalness={.5} roughness={.2}/></mesh>
+   {[-1,1].map(s=><group key={s}>
+    <mesh castShadow position={[s*.27,1.48,-.34]} rotation={[.5,0,s*.34]}><capsuleGeometry args={[.085,.57,6,10]}/><meshStandardMaterial color="#263f58"/></mesh>
+    <mesh position={[s*.34,1.13,-.72]}><sphereGeometry args={[.09,12,10]}/><meshStandardMaterial color="#b77d5d"/></mesh>
+    <mesh castShadow position={[s*.16,.98,.2]} rotation={[-.65,0,s*.12]}><capsuleGeometry args={[.105,.55,6,10]}/><meshStandardMaterial color="#202a33"/></mesh>
+    <mesh castShadow position={[s*.16,.69,.55]} rotation={[.2,0,0]}><capsuleGeometry args={[.09,.34,6,10]}/><meshStandardMaterial color="#202a33"/></mesh>
+   </group>)}
+  </group>
+ </group>;
+}
 function BoatModel(){return <group><mesh castShadow position={[0,.25,0]} rotation={[0,0,0]}><coneGeometry args={[1.3,3.8,4]}/><meshStandardMaterial color="#e8e0d4" metalness={.25} roughness={.35}/></mesh><mesh position={[0,.65,.25]}><boxGeometry args={[1.6,.7,1.6]}/><meshStandardMaterial color="#c84e47"/></mesh><mesh position={[0,1.12,.15]}><boxGeometry args={[1.2,.5,.7]}/><meshStandardMaterial color="#283d4b" metalness={.5} roughness={.2}/></mesh></group>;}
 function Sign({position,label}){return <group position={position}><mesh position={[0,1.8,0]}><boxGeometry args={[.18,3.6,.18]}/><meshStandardMaterial color="#42504c"/></mesh><mesh position={[0,3.45,0]}><boxGeometry args={[7,1.2,.18]}/><meshStandardMaterial color="#2e725e" metalness={.2}/></mesh><Text position={[0,3.45,.12]} fontSize={.36} color="#eff7e7" anchorX="center" anchorY="middle">{label}</Text></group>;}
 function SkillPanel({position,group}){return <Float speed={1.2} floatIntensity={.22} rotationIntensity={.03}><group position={position}><mesh><boxGeometry args={[7,4.8,.16]}/><meshStandardMaterial color="#112e38" emissive="#174a55" emissiveIntensity={.7} metalness={.4} roughness={.3}/></mesh><Text position={[-3.05,1.85,.12]} fontSize={.34} color="#91e3d7" anchorX="left">{group.group}</Text>{group.items.map((s,i)=><group key={s.name} position={[-3.05,1.1-i*.65,.12]}><Text fontSize={.22} color="#f0f4ef" anchorX="left">{s.name}</Text><mesh position={[1.75,-.05,0]}><boxGeometry args={[2.15,.08,.03]}/><meshBasicMaterial color="#304d57"/></mesh><mesh position={[.675+s.level/100*1.075,-.05,.025]}><boxGeometry args={[2.15*s.level/100,.08,.04]}/><meshBasicMaterial color="#80d6ce"/></mesh></group>)}</group></Float>;}
