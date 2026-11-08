@@ -65,7 +65,12 @@ function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=fal
   const document={
     hidden:false,
     body:{classList:{add(){},remove(){}},append(){}},
-    documentElement:{scrollHeight:5500,classList:{add(){},remove(){}}},
+    documentElement:{scrollHeight:5500,classList:{
+      _set:new Set(['hero-build-primed']),
+      add(v){this._set.add(v);},
+      remove(v){this._set.delete(v);},
+      contains(v){return this._set.has(v);}
+    }},
     createElement:type=>element(type),
     querySelector:sel=>sel==='.hero h1'?h1:null,
     querySelectorAll:()=>targets,
