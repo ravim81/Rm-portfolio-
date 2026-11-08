@@ -204,7 +204,7 @@ function initWorld(THREE){
   else if(manualMode)currentProgress=manualProgress();
   updateScene(currentProgress,delta);renderer.render(scene,camera);
  }
- window.__WORLD_READY__=true;window.__WORLD_DIAGNOSTICS__={renderer:'webgl',objects:scene.children.length,buildings:38,billboardCount:5,projectBillboards:4,rider:true,motorcycle:true,instancedWindows:warmMatrices.length+coolMatrices.length+darkMatrices.length};
+ window.__WORLD_READY__=true;window.__WORLD_DIAGNOSTICS__={renderer:'webgl',objects:scene.children.length,buildings:38,billboardCount:8,projectBillboards:7,rider:true,motorcycle:true,instancedWindows:warmMatrices.length+coolMatrices.length+darkMatrices.length};
  document.documentElement.dataset.worldRenderer='webgl';loading.style.opacity='0';setTimeout(()=>{loading.hidden=true;},500);
  world={get progress(){return currentProgress;}};window.__WORLD_APP__={get progress(){return currentProgress;},get autoPlaying(){return autoPlaying;},get diagnostics(){return window.__WORLD_DIAGNOSTICS__;}};
  updateControls();requestAnimationFrame(animate);
