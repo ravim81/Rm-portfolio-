@@ -10,7 +10,7 @@ const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v);};
 const lerp=(a,b,t)=>a+(b-a)*t;
 let autoPlaying=!reducedMotion,manualMode=false,autoStart=performance.now(),currentProgress=0,lastFrame=performance.now(),lastCaption=-1,visible=true,world=null;
-const rideDuration=22000;
+const rideDuration=16000;
 function setFallback(reason){
  fallback.hidden=false;canvas.style.display='none';loading.style.opacity='0';
  document.documentElement.dataset.worldRenderer='fallback';window.__WORLD_FAILED__=String(reason||'3D renderer unavailable');
@@ -138,10 +138,10 @@ function initWorld(THREE){
  addBox(barge,25,.12,.12,railMat,0,3.08,4.35);addBox(barge,25,.12,.12,railMat,0,3.08,-4.35);
  const bargeLamp=mat(0xffb88e,.3,.1,{emissive:0xff754f,emissiveIntensity:1.4});
  for(let i=0;i<9;i++){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),bargeLamp);lamp.position.set(-10+i*2.5,3.2,4.3);barge.add(lamp);}
- barge.position.set(35,0,-211);scene.add(barge);
- makeBillboard(35,9.2,-211,20,8.8,'WORK / IN MOTION','A FLOATING SHOWCASE OF IDEAS','#ff795f');
- makeBillboard(22,5.5,-202,7.2,3.6,'DESIGN','THOUGHTFUL BY DEFAULT','#ff9c79');
- makeBillboard(48,5.5,-220,7.2,3.6,'BUILD','MADE TO BE USED','#ff6c78');
+ barge.position.set(30,0,-192);scene.add(barge);
+ makeBillboard(30,9.5,-192,27,11,'WORK / IN MOTION','A FLOATING SHOWCASE OF IDEAS','#ff795f');
+ makeBillboard(14,5.5,-183,8.2,4.1,'DESIGN','THOUGHTFUL BY DEFAULT','#ff9c79');
+ makeBillboard(46,5.5,-204,8.2,4.1,'BUILD','MADE TO BE USED','#ff6c78');
  const harbourLights=new THREE.Group();
  for(let i=0;i<14;i++){
   const x=17+i*3.2,z=-174-(i%3)*17;
@@ -190,9 +190,9 @@ function initWorld(THREE){
   wheels.forEach(w=>{w.rotation.x=-progress*155/.47;});
   const intro=smooth(progress/.14),mobile=innerWidth<700,followX=state.rideX+(mobile?1.25:2.35)+Math.sin(progress*5.2)*.32;
   const followY=mobile?4.25:4.75,followZ=state.rideZ+(mobile?8.4:10.3);
-  const harbour=smooth((progress-.68)/.32);
-  const harbourX=mobile?53:57,harbourY=mobile?24:19,harbourZ=-185;
-  const harbourLookX=35,harbourLookY=6.4,harbourLookZ=-211;
+  const harbour=smooth((progress-.42)/.33);
+  const harbourX=mobile?45:47,harbourY=mobile?21:17,harbourZ=-166;
+  const harbourLookX=30,harbourLookY=6.8,harbourLookZ=-192;
   desiredCamera.set(lerp(lerp(17,followX,intro),harbourX,harbour),lerp(lerp(13,followY,intro),harbourY,harbour),lerp(lerp(23,followZ,intro),harbourZ,harbour));
   desiredLook.set(lerp(lerp(0,state.rideX,intro),harbourLookX,harbour),lerp(lerp(3.2,1.55,intro),harbourLookY,harbour),lerp(lerp(-48,state.rideZ-8,intro),harbourLookZ,harbour));
   const ease=1-Math.exp(-Math.max(.001,delta)*4.2);camera.position.lerp(desiredCamera,ease);currentLook.lerp(desiredLook,ease);camera.lookAt(currentLook);
