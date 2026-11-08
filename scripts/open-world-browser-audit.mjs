@@ -6,11 +6,11 @@ await mkdir(out,{recursive:true});
 const failures=[];
 for(let i=0;i<30;i++){try{const response=await fetch(base);if(response.ok)break;}catch{}await new Promise(r=>setTimeout(r,1000));}
 for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['webkit',webkit]]){
- let browser;
+ let browser; const errors=[]; let page;
  try{
   browser=await browserType.launch({headless:true,args:name==='chromium'?['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']:[],firefoxUserPrefs:name==='firefox'?{'webgl.force-enabled':true,'webgl.disabled':false,'webgl.enable-webgl2':true}:undefined});
-  const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+  page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});page.on('requestfailed',r=>errors.push('request failed: '+r.url()+' '+r.failure()?.errorText));
   await page.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
   if(!(await page.title()).includes('Ravi M.'))throw new Error('Portfolio title is missing');
   const start=page.getByRole('button',{name:/START EXPLORING/i});
@@ -30,7 +30,7 @@ for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['web
   if(!(await page.getByText('Ideas into').first().isVisible()))throw new Error('2D accessible version did not render');
   await page.screenshot({path:`${out}/${name}-2d.png`,fullPage:true});
   console.log(name+': PASS');
- }catch(e){failures.push(name+': '+e.message);console.error(name+': FAIL '+e.message);}
+ }catch(e){failures.push(name+': '+e.message+' | '+errors.join(' || '));console.error(name+': FAIL '+e.message+' | '+errors.join(' || '));}
  finally{if(browser)await browser.close();}
 }
 await writeFile(out+'/summary.json',JSON.stringify({base,failures,passed:3-failures.length},null,2));
