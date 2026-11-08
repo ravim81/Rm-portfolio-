@@ -50,8 +50,9 @@ function mockBrowser({reduced=false, width=960}={}) {
 
 test('legacy particle engine remains independently valid but no longer doubles the hero title',()=>{
   assert.doesNotThrow(()=>new Script(source));
-  assert.match(index,/src="particle-intro\.js" defer/);
-  assert.ok(index.indexOf('particle-intro.js')<index.indexOf('build-story.js'));
+  assert.doesNotMatch(index,/src="particle-intro\.js" defer/,
+    'the retired particle engine must not load on the live portfolio');
+  assert.ok(index.includes('build-story.js'));
   assert.match(story,/const particleIntro = null/);
   assert.doesNotMatch(story,/particleIntro\.draw\(now, agents\)/);
   assert.match(story,/renderHeroIntro\(elapsed\)/);
