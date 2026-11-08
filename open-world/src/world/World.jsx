@@ -23,7 +23,7 @@ function Street({z=0}) {
 }
 function Vehicle({started,paused,stick,vehicleType,onPosition}) {
  const body=useRef(),group=useRef(),speed=useRef(0),yaw=useRef(0),keys=useRef({});
- const {camera}=useThree();
+ const {camera}=useThree(); const updateTimer=useRef(0);
  useEffect(()=>{const down=e=>{keys.current[e.key.toLowerCase()]=true;};const up=e=>{keys.current[e.key.toLowerCase()]=false;};window.addEventListener('keydown',down);window.addEventListener('keyup',up);return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);};},[]);
  useFrame((state,dt)=>{
   if(!body.current||!started||paused)return;dt=Math.min(dt,.04);

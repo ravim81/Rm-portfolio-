@@ -8,9 +8,9 @@ for(let i=0;i<30;i++){try{const response=await fetch(base);if(response.ok)break;
 for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['webkit',webkit]]){
  let browser;
  try{
-  browser=await browserType.launch({headless:true,args:name==='chromium'?['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']:[]});
+  browser=await browserType.launch({headless:true,args:name==='chromium'?['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']:[],firefoxUserPrefs:name==='firefox'?{'webgl.force-enabled':true,'webgl.disabled':false,'webgl.enable-webgl2':true}:undefined});
   const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   await page.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
   if(!(await page.title()).includes('Ravi M.'))throw new Error('Portfolio title is missing');
   const start=page.getByRole('button',{name:/START EXPLORING/i});
