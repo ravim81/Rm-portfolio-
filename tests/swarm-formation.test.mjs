@@ -35,7 +35,7 @@ test('swarm engine is stand-alone pure geometry and loads before the story contr
   assert.ok(html.indexOf('swarm-formation.js')<html.indexOf('build-story.js'));
   assert.match(story,/swarm\.planStage/);
   assert.match(story,/swarm\.workFrame/);
-  assert.match(story,/swarm\.introFrame/);
+  // Intro now follows the native heading edge; swarm remains the project builder.\n  assert.match(story,/renderHeroIntro/);
   assert.match(story,/agents\.forEach\(a => a\.el\.style\.opacity = '0'\)/);
   assert.match(story,/!swarm/);
 });
