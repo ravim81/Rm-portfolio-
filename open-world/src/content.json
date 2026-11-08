@@ -1,23 +1,197 @@
 {
-  "identity": { "name": "Ravi M.", "handle": "@ravim", "role": "Independent builder · India", "intro": "I turn curious ideas into useful digital experiences." },
-  "intro": { "eyebrow": "A WORLD TO EXPLORE", "title": "Make the next move.", "subtitle": "Drive through the ideas, skills and services behind my work.", "startLabel": "START EXPLORING" },
+  "identity": {
+    "name": "Ravi M.",
+    "handle": "@ravim",
+    "role": "Independent builder · India",
+    "intro": "I turn curious ideas into useful digital experiences."
+  },
+  "intro": {
+    "eyebrow": "A WORLD TO EXPLORE",
+    "title": "Make the next move.",
+    "subtitle": "Drive through the ideas, skills and services behind my work.",
+    "startLabel": "START EXPLORING"
+  },
   "zones": [
-    { "id":"city", "label":"THE CITY", "hint":"WASD / ARROWS TO DRIVE" },
-    { "id":"skills", "label":"THE SKILL ZONE", "hint":"GET CLOSE TO DISCOVER SKILLS" },
-    { "id":"water", "label":"OPEN WATER", "hint":"THE ROAD BECOMES A WATERWAY" },
-    { "id":"services", "label":"SERVICE DECK", "hint":"APPROACH A DISPLAY TO OPEN IT" },
-    { "id":"finale", "label":"THE SKY", "hint":"ONE LAST VIEW" },
-    { "id":"contact", "label":"LET'S TALK", "hint":"WELCOME TO THE MEETING ROOM" }
+    {
+      "id": "city",
+      "label": "THE CITY",
+      "hint": "WASD / ARROWS TO DRIVE"
+    },
+    {
+      "id": "skills",
+      "label": "THE SKILL ZONE",
+      "hint": "GET CLOSE TO DISCOVER SKILLS"
+    },
+    {
+      "id": "water",
+      "label": "OPEN WATER",
+      "hint": "THE ROAD BECOMES A WATERWAY"
+    },
+    {
+      "id": "services",
+      "label": "SERVICE DECK",
+      "hint": "APPROACH A DISPLAY TO OPEN IT"
+    },
+    {
+      "id": "finale",
+      "label": "THE SKY",
+      "hint": "ONE LAST VIEW"
+    },
+    {
+      "id": "contact",
+      "label": "LET'S TALK",
+      "hint": "WELCOME TO THE MEETING ROOM"
+    }
   ],
   "skills": [
-    { "group":"FILM · EDIT · AI", "items":[{"name":"Premiere Pro","level":88},{"name":"After Effects","level":82},{"name":"Blender","level":78},{"name":"Photoshop","level":86},{"name":"AI Images","level":88},{"name":"AI Videos","level":76}] },
-    { "group":"FULL-STACK · 3D WEB", "items":[{"name":"React","level":86},{"name":"Node.js","level":80},{"name":"Express","level":76},{"name":"Spring Boot","level":68},{"name":"Three.js","level":82},{"name":"WebGL / R3F","level":78}] }
+    {
+      "group": "FILM · EDIT · AI",
+      "items": [
+        {
+          "name": "Premiere Pro",
+          "level": 88
+        },
+        {
+          "name": "After Effects",
+          "level": 82
+        },
+        {
+          "name": "Blender",
+          "level": 78
+        },
+        {
+          "name": "Photoshop",
+          "level": 86
+        },
+        {
+          "name": "AI Images",
+          "level": 88
+        },
+        {
+          "name": "AI Videos",
+          "level": 76
+        }
+      ]
+    },
+    {
+      "group": "FULL-STACK · 3D WEB",
+      "items": [
+        {
+          "name": "React",
+          "level": 86
+        },
+        {
+          "name": "Node.js",
+          "level": 80
+        },
+        {
+          "name": "Express",
+          "level": 76
+        },
+        {
+          "name": "Spring Boot",
+          "level": 68
+        },
+        {
+          "name": "Three.js",
+          "level": 82
+        },
+        {
+          "name": "WebGL / R3F",
+          "level": 78
+        }
+      ]
+    }
   ],
   "services": [
-    { "id":"uiux", "title":"UI / UX DESIGN", "description":"Clear, thoughtful interfaces that make complex products feel simple.", "details":"Product thinking, interface systems, interaction design, responsive experiences and rapid prototypes.", "cta":"View project", "accent":"#ff8068", "url":"#contact" },
-    { "id":"mobile", "title":"MOBILE APPS", "description":"Useful mobile experiences built around real user needs.", "details":"Mobile-first product flows, app concepts, responsive systems and polished interaction prototypes.", "cta":"View project", "accent":"#83d4cf", "url":"#contact" },
-    { "id":"editing", "title":"PHOTO & VIDEO EDITING", "description":"Visual stories shaped with rhythm, clarity and character.", "details":"Short-form edits, product visuals, motion graphics, compositing and AI-assisted creative workflows.", "cta":"View project", "accent":"#f4bd76", "url":"#contact" }
+    {
+      "id": "uiux",
+      "title": "UI / UX DESIGN",
+      "description": "Clear, thoughtful interfaces that make complex products feel simple.",
+      "details": "Product thinking, interface systems, interaction design, responsive experiences and rapid prototypes.",
+      "cta": "View project",
+      "accent": "#ff8068",
+      "url": "#contact"
+    },
+    {
+      "id": "mobile",
+      "title": "MOBILE APPS",
+      "description": "Useful mobile experiences built around real user needs.",
+      "details": "Mobile-first product flows, app concepts, responsive systems and polished interaction prototypes.",
+      "cta": "View project",
+      "accent": "#83d4cf",
+      "url": "#contact"
+    },
+    {
+      "id": "editing",
+      "title": "PHOTO & VIDEO EDITING",
+      "description": "Visual stories shaped with rhythm, clarity and character.",
+      "details": "Short-form edits, product visuals, motion graphics, compositing and AI-assisted creative workflows.",
+      "cta": "View project",
+      "accent": "#f4bd76",
+      "url": "#contact"
+    }
   ],
-  "contact": { "email":"hello@ravim.dev", "whatsapp":"https://wa.me/", "linkedin":"https://www.linkedin.com/", "github":"https://github.com/ravim81", "formEndpoint":"" },
-  "assets": { "eiffel":"procedural placeholder", "city":"procedural low-poly blocks", "vehicles":"procedural placeholder", "boat":"procedural placeholder", "meetingRoom":"procedural placeholder", "audio":"generated ambience placeholder" }
+  "contact": {
+    "email": "YOUR_EMAIL@example.com",
+    "whatsapp": "https://wa.me/YOUR_PHONE_NUMBER",
+    "linkedin": "https://www.linkedin.com/in/YOUR_HANDLE",
+    "github": "https://github.com/ravim81",
+    "formEndpoint": "",
+    "screenTitle": "LET'S BUILD SOMETHING",
+    "hireLabel": "HIRE ME ↗",
+    "sentLabel": "OPENING EMAIL…",
+    "form": {
+      "namePlaceholder": "Your name",
+      "emailPlaceholder": "Your email",
+      "messagePlaceholder": "Tell me about your idea"
+    },
+    "links": [
+      {
+        "label": "EMAIL",
+        "url": "mailto:YOUR_EMAIL@example.com"
+      },
+      {
+        "label": "WHATSAPP",
+        "url": "https://wa.me/YOUR_PHONE_NUMBER"
+      },
+      {
+        "label": "LINKEDIN",
+        "url": "https://www.linkedin.com/in/YOUR_HANDLE"
+      },
+      {
+        "label": "GITHUB",
+        "url": "https://github.com/ravim81"
+      }
+    ],
+    "roomLabel": "CONTACT ROOM"
+  },
+  "assets": {
+    "eiffel": "procedural placeholder",
+    "city": "procedural low-poly blocks",
+    "vehicles": "procedural placeholder",
+    "boat": "procedural placeholder",
+    "meetingRoom": "procedural placeholder",
+    "audio": "generated ambience placeholder"
+  },
+  "ui": {
+    "engineLabel": "WORLD ENGINE",
+    "loadingLabel": "BUILDING YOUR WORLD",
+    "experienceLabel": "OPEN WORLD EXPERIENCE · 2026",
+    "desktopLabel": "DESKTOP / TOUCH",
+    "skipLabel": "SKIP TO 2D",
+    "pauseLabel": "PAUSE",
+    "resumeLabel": "RESUME",
+    "muteLabel": "Enable sound",
+    "unmuteLabel": "Mute sound",
+    "nowEntering": "NOW ENTERING",
+    "driveHint": "DRIVE",
+    "boostHint": "BOOST",
+    "brakeHint": "BRAKE",
+    "minimapLabel": "WORLD MAP",
+    "replayLabel": "REPLAY",
+    "soundLabel": "SOUND",
+    "modeLabel": "THIRD-PERSON EXPLORATION",
+    "introBrand": "PORTFOLIO"
+  }
 }

@@ -2,6 +2,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import { Canvas } from '@react-three/fiber';
 import { AdaptiveDpr, Preload, useProgress } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { gsap } from 'gsap';
 import content from '../content.json';
 import World from '../world/World.jsx';
@@ -9,7 +10,7 @@ import World from '../world/World.jsx';
 function Loader({ onReady }) {
   const { progress, active } = useProgress();
   useEffect(() => { if (!active && progress >= 100) onReady(); }, [active, progress, onReady]);
-  return <div className="preloader"><div className="preloader-top"><span>RAVI M. / WORLD ENGINE</span><span>{Math.round(progress)}%</span></div><div className="load-track"><i style={{ transform: `scaleX(${progress / 100})` }} /></div><p>BUILDING YOUR WORLD</p></div>;
+  return <div className="preloader"><div className="preloader-top"><span>{content.identity.name.toUpperCase()} / {content.ui.engineLabel}</span><span>{Math.round(progress)}%</span></div><div className="load-track"><i style={{ transform: `scaleX(${progress / 100})` }} /></div><p>{content.ui.loadingLabel}</p></div>;
 }
 function useAudio() {
   const audio = useRef(null);
@@ -51,17 +52,17 @@ export default function App() {
   useEffect(()=>{const fn=e=>{if(e.key==='Escape')setModal(null);};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn);},[]);
   if(is2d)return <TwoDVersion/>;
   return <main className="game-shell">
-    {!started && <div className="intro-screen"><div className="intro-grid"/><div className="intro-top"><span>RAVI M. / PORTFOLIO</span><span>OPEN WORLD EXPERIENCE · 2026</span></div><div className="intro-copy"><p className="eyebrow">{content.intro.eyebrow}</p><h1>{content.intro.title}</h1><p>{content.intro.subtitle}</p><button className="button button-primary" onClick={()=>{setStarted(true);setPaused(false);}}>{content.intro.startLabel}<span>↗</span></button></div><div className="intro-bottom"><span>THIRD-PERSON EXPLORATION</span><span>DESKTOP / TOUCH</span></div></div>}
-    <div className="world-viewport" style={{visibility:started?'visible':'hidden'}}>
+    {!started && <div className="intro-screen"><div className="intro-grid"/><div className="intro-top"><span>{content.identity.name.toUpperCase()} / {content.ui.introBrand}</span><span>{content.ui.experienceLabel}</span></div><div className="intro-copy"><p className="eyebrow">{content.intro.eyebrow}</p><h1>{content.intro.title}</h1><p>{content.intro.subtitle}</p><button className="button button-primary" onClick={()=>{setStarted(true);setPaused(false);}}>{content.intro.startLabel}<span>↗</span></button></div><div className="intro-bottom"><span>{content.ui.experienceLabel}</span><span>{content.ui.desktopLabel}</span></div></div>}
+    <div className="world-viewport" style={{visibility:'visible'}}>
       <Canvas shadows dpr={[1,1.6]} camera={{position:[0,5,10],fov:52}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#9bc6d7');}}>
-        <Suspense fallback={null}><Physics gravity={[0,-9.81,0]} timeStep="vary"><World started={started} paused={paused} stick={stick} onZoneChange={onZoneChange} onProject={setModal}/></Physics><AdaptiveDpr pixelated/><Preload all/></Suspense>
+        <Suspense fallback={null}><Physics gravity={[0,-9.81,0]} timeStep="vary"><World started={started} paused={paused} stick={stick} onZoneChange={onZoneChange} onProject={setModal}/></Physics><EffectComposer multisampling={0}><Bloom intensity={.45} luminanceThreshold={.72} mipmapBlur/><Vignette eskil={false} offset={.16} darkness={.38}/></EffectComposer><AdaptiveDpr pixelated/><Preload all/></Suspense>
       </Canvas>
     </div>
     {started && <>
-      <div className="hud-top"><a className="brand" href="#top">RAVI <i>M.</i></a><span>{content.identity.role.toUpperCase()}</span><div className="hud-actions"><button onClick={toggle} aria-label={muted?'Enable sound':'Mute sound'}>{muted?'◖':'◖)))'}</button><button onClick={()=>setPaused(v=>!v)}>{paused?'RESUME':'PAUSE'}</button><a href="/world/?view=2d">SKIP TO 2D ↗</a></div></div>
-      <div className="zone-label"><small>NOW ENTERING / 0{zone+1}</small><strong>{content.zones[zone]?.label}</strong><span>{content.zones[zone]?.hint}</span></div>
+      <div className="hud-top"><a className="brand" href="#top">RAVI <i>M.</i></a><span>{content.identity.role.toUpperCase()}</span><div className="hud-actions"><button onClick={toggle} aria-label={muted?content.ui.muteLabel:content.ui.unmuteLabel}>{muted?'◖':'◖)))'}</button><button onClick={()=>setPaused(v=>!v)}>{paused?content.ui.resumeLabel:content.ui.pauseLabel}</button><a href="/world/?view=2d">{content.ui.skipLabel} ↗</a></div></div>
+      <div className="zone-label"><small>{content.ui.nowEntering} / 0{zone+1}</small><strong>{content.zones[zone]?.label}</strong><span>{content.zones[zone]?.hint}</span></div>
       <div className="zone-progress"><div className="zone-track"><i style={{width:`${((zone+1)/content.zones.length)*100}%`}}/></div><div className="zone-numbers">{content.zones.map((z,i)=><span key={z.id} className={i===zone?'active':''}>{String(i+1).padStart(2,'0')}</span>)}</div></div>
-      <div className="control-hints"><span><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> DRIVE</span><span><kbd>SHIFT</kbd> BOOST</span><span><kbd>SPACE</kbd> BRAKE</span></div>
+      <div className="control-hints"><span><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> {content.ui.driveHint}</span><span><kbd>SHIFT</kbd> {content.ui.boostHint}</span><span><kbd>SPACE</kbd> {content.ui.brakeHint}</span></div>
       <div className="minimap"><span className="map-you">●</span><span className="map-route"/></div>
       <TouchPad onChange={setStick}/><button className="touch-boost" onTouchStart={()=>setStick(v=>({...v,boost:1}))} onTouchEnd={()=>setStick(v=>({...v,boost:0}))}>BOOST</button>
     </>}
