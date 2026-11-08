@@ -96,11 +96,13 @@
   const pause = controls.querySelector('.build-pause');
   let introStart = performance.now();
   const heroNodes = targets.filter(el => el.closest('.hero'));
-  // On phones the particle wordmark rendered as an unreadable dust cloud.
-  // Retain the desktop cinematic intro; mobile reveals the real crisp text.
-  const particleIntro = !reduceMotion && !compact && window.createPortfolioParticleIntro
-    ? window.createPortfolioParticleIntro({layer, heroHeading: document.querySelector('.hero h1')})
-    : null;
+  // The old particle-to-title overlay caused a second, competing title reveal.
+  // Keep its optional API for backward compatibility, but do not instantiate it.
+  // window.createPortfolioParticleIntro remains an isolated legacy visual module.
+  const particleIntro = null;
+  const heroTitle = document.querySelector('.hero h1');
+  const heroIntroClass = 'hero-build-primed';
+  const heroIntroDuration = 1480;
   const cursorTrails = !reduceMotion && window.createPortfolioCursorTrails && typeof Path2D === 'function'
     ? window.createPortfolioCursorTrails({layer, agentCount: agents.length})
     : null;
@@ -243,9 +245,11 @@
     if (introHandoff) return;
     introHandoff = true;
     heroNodes.forEach((el, i) => {
+      const alreadyRevealed = el.classList.contains('build-complete');
       revealImmediately(el);
-      if (!animated) return;
-      // The hero h1 is built by particles; h2 is drafted letter by letter.
+      // The wordmark is constructed exactly once by renderHeroIntro, never
+      // given a second opacity/clip/particle animation at the handoff.
+      if (!animated || el === heroTitle || alreadyRevealed) return;
       if (!compact && el.matches('h2') && beginKinetic(el, agents, performance.now())) return;
       const portrait = el.matches('.portrait');
       const heading = el.matches('h1');
@@ -267,10 +271,64 @@
       animations.push(animation);
     });
   }
+  function completeHeroTitle() {
+    if (!heroTitle) return;
+    heroTitle.style.setProperty('--hero-title-mask','0%');
+    heroTitle.dataset.introState = 'complete';
+    heroTitle.dataset.introProgress = '1';
+    document.documentElement.classList.remove(heroIntroClass);
+    revealImmediately(heroTitle);
+  }
+  // A single native HTML headline is progressively unmasked. The pointer tip
+  // traces the exact advancing reveal edge; no duplicate text or Canvas copy.
+  // All coordinates are measured from the real heading each frame.
+  function renderHeroIntro(elapsed) {
+    if (!heroTitle) return;
+    const bounds = heroTitle.getBoundingClientRect();
+    const w = Math.max(1,bounds.width), h = Math.max(1,bounds.height);
+    const progress = easeInOut(clamp((elapsed - 140) / 920,0,1));
+    const visibleCrew = compact ? 6 : 8;
+    const x = bounds.left + w * progress;
+    const top = bounds.top, bottom = bounds.bottom;
+    const enter = clamp(elapsed / 170,0,1);
+    const exit = clamp((heroIntroDuration - elapsed) / 260,0,1);
+    if (document.documentElement.classList.contains(heroIntroClass)) {
+      heroTitle.style.setProperty('--hero-title-mask',
+        (100 * (1-progress)).toFixed(3) + '%');
+    }
+    heroTitle.dataset.introState = progress >= .999 ? 'constructed' : 'constructing';
+    heroTitle.dataset.introProgress = progress.toFixed(3);
+    const point = (i) => {
+      switch (i) {
+        case 0: return [x, top+h*.51]; // The lead pointer exposes each glyph
+        case 1: return [x, top-12]; // Top guide tracks the advancing edge
+        case 2: return [x, bottom+11]; // Baseline guide builds in step
+        case 3: return [bounds.left-8, top+h*progress]; // Left edge alignment
+        case 4: return [bounds.left + w*progress*.79, bottom+16]; // Detail pass
+        case 5: return [bounds.left + w*progress*.63, top-18]; // Finish pass
+        case 6: return [x+14, top+h*.19];
+        default: return [x+15,bottom-h*.17];
+      }
+    };
+    agents.forEach((agent,i) => {
+      if (i>=visibleCrew) {agent.el.style.opacity='0';return;}
+      const [cx,cy]=point(i);
+      agent.task = i===0?'reveal':i===1?'top-guide':
+        i===2?'baseline':i===3?'align':'detail';
+      agent.el.dataset.task=agent.task;
+      move(agent,cx,cy,(.68+.19*enter)*enter*exit);
+    });
+    illuminate(x, top+h*.53, .12*enter*exit);
+    if (progress>=1 && !introHandoff) {
+      completeHeroTitle();
+      handoffHero(true);
+    }
+    caption.textContent = 'CONSTRUCTING / RAVI M.';
+  }
   function finishIntro(now) {
-    particleIntro?.end();
-    introAvailable = false;
+    completeHeroTitle();
     handoffHero(false);
+    agents.forEach(a=>a.el.style.opacity='0');
     phase = 'hold';
     holdUntil = now + (compact ? 680 : 850);
     caption.textContent = 'AUTOPLAY / 23 AGENTS';
@@ -278,55 +336,8 @@
   function showIntro(now) {
     if (!autoplay) return;
     const elapsed = Math.max(0, now - introStart);
-    const width = innerWidth, height = innerHeight;
-    if (compact) {
-      // Six legible builders follow the REAL heading boundaries. The other
-      // seventeen are held out of view during this small-screen chapter.
-      const heading = document.querySelector('.hero h1');
-      const rect = heading?.getBoundingClientRect();
-      if (rect) {
-        const left = clamp(rect.left, 15, width - 25);
-        const right = clamp(rect.right, 25, width - 15);
-        const top = clamp(rect.top - 12, 80, height - 130);
-        const bottom = clamp(rect.bottom + 12, 110, height - 90);
-        const progress = easeOut(elapsed / 820);
-        const points = [
-          [left + (right-left)*progress, top],
-          [right, top + (bottom-top)*progress],
-          [right - (right-left)*progress, bottom],
-          [left, bottom - (bottom-top)*progress],
-          [left + (right-left)*(.15+.70*progress), top - 15],
-          [left + (right-left)*(.85-.70*progress), bottom + 15]
-        ];
-        agents.forEach((agent,i)=>{
-          if (i >= points.length) {agent.el.style.opacity='0';return;}
-          agent.task=['frame','edge','baseline','align','type','finish'][i];
-          agent.el.dataset.task=agent.task;
-          move(agent, points[i][0], points[i][1],
-            clamp((elapsed-100)/190)*clamp((1350-elapsed)/260)*.85);
-        });
-        illuminate((left+right)*.5,(top+bottom)*.5,.11);
-      }
-      // The real semantic hero content is legible immediately. The cursor
-      // crew briefly accentuates it rather than replacing it with particles.
-      if (elapsed >= 110) handoffHero(false);
-      if (elapsed >= 1350) finishIntro(now);
-      else caption.textContent = 'BUILDING / RAVI M.';
-      return;
-    }
-    const formations = swarm.introFrame(agents, elapsed, viewport());
-    formations.forEach((position, i) => {
-      const a = agents[i];
-      a.formation = position.formation;
-      a.task = 'construct';
-      move(a, position.x, position.y, position.opacity);
-    });
-    illuminate(width * .5, height * .44,
-      elapsed < 2230 ? .10 + .30 * easeOut(elapsed / 1100) : .13);
-    if (introAvailable) particleIntro.draw(now, agents);
-    if (elapsed >= (introAvailable ? 2320 : 850)) handoffHero(true);
-    if (elapsed >= (introAvailable ? 3090 : 1470)) finishIntro(now);
-    else caption.textContent = introAvailable ? 'ASSEMBLING / RAVI M.' : 'BUILDING / 23 AGENTS';
+    renderHeroIntro(elapsed);
+    if (elapsed >= heroIntroDuration) finishIntro(now);
   }
   function kind(el) {
     if (el.matches('.project')) return 'project';
@@ -699,6 +710,7 @@
     cursorTrails?.clear();
     sceneDirector?.clear();
     particleIntro?.end();
+    completeHeroTitle();
     introAvailable = false;
     introHandoff = true;
     autoplay = false;
@@ -721,6 +733,7 @@
     restoreKinetic();
     cursorTrails?.clear();
     sceneDirector?.clear();
+    completeHeroTitle();
     animations.forEach(a => { try { a.cancel(); } catch {} });
     animations = [];
     stage = null;
@@ -737,20 +750,45 @@
     pause.textContent = 'Pause';
     pause.setAttribute('aria-pressed', 'false');
     caption.textContent = 'AUTOPLAY / 23 AGENTS';
+    document.documentElement.classList.add(heroIntroClass);
+    heroTitle?.style.setProperty('--hero-title-mask','100%');
+    heroTitle.dataset.introState = 'constructing';
+    heroTitle.dataset.introProgress = '0';
     targets.forEach(el => {
-      // Replay begins from an entirely clean visual state. A pre-existing
-      // preview must not remain faintly visible behind the rebuilt intro.
-      el.classList.remove('build-complete','build-staging');
-      el.classList.add('build-pending');
+      // Only one native wordmark is reconstructed. Other mobile hero
+      // content stays present instead of briefly vanishing on replay.
+      el.classList.remove('build-complete','build-staging','build-pending');
+      if (el === heroTitle || (compact && el.closest('.hero')))
+        revealImmediately(el);
+      else el.classList.add('build-pending');
     });
     scrollTo({top:0,behavior:'instant'});
     agents.forEach(a => { a.x = innerWidth * .5; a.y = innerHeight * .47; });
     clearGuides();
-    // Rebuild the exact same particle-to-wordmark intro on every replay.
+    // Replay the same native-text construction; no second particle engine.
     introStart = performance.now();
-    try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
-    catch { introAvailable = false; }
+    introAvailable = false;
     schedule();
+  }
+
+  // Scrub the same production hero renderer in browser QA, without relying
+  // on a CI runner to catch a brief native animation frame.
+  if (window.__PORTFOLIO_AUDIT__ && !reduceMotion) {
+    window.__portfolioAuditHero = fraction => {
+      if (frame) cancelAnimationFrame(frame);
+      frame=0; autoplay=false;enabled=true;phase='intro';
+      document.documentElement.classList.add(heroIntroClass);
+      heroTitle?.style.setProperty('--hero-title-mask','100%');
+      revealImmediately(heroTitle);
+      introHandoff=false;
+      renderHeroIntro(clamp(fraction,0,1)*heroIntroDuration);
+      return {
+        progress:Number(heroTitle?.dataset.introProgress||0),
+        state:heroTitle?.dataset.introState,
+        mask:heroTitle?.style.getPropertyValue('--hero-title-mask'),
+        crew:agents.filter(a=>Number(a.el.style.opacity)>.15).length
+      };
+    };
   }
 
   // Deterministic visual QA: render the REAL production stage at requested
@@ -798,10 +836,11 @@
   // The independent watchdog can safely release the page on animation errors.
   window.__portfolioStoryRecover = exploreFreely;
   targets.forEach(el => {
-    // Mobile first paint must never depend on a scheduled animation frame.
-    // The readable hero is live immediately; only subsequent chapters are
-    // withheld for agent-led construction. This also protects slow WebKit.
-    if (enabled && !(compact && el.closest('.hero'))) el.classList.add('build-pending');
+    // The heading is readable HTML underneath a single CSS mask. Do not
+    // mark it build-pending or its opacity would suppress the construction.
+    // Mobile supporting content stays visible while its title is drafted.
+    if (enabled && el !== heroTitle && !(compact && el.closest('.hero')))
+      el.classList.add('build-pending');
     else revealImmediately(el);
   });
   controls.querySelector('.build-replay').addEventListener('click', replay);
@@ -881,8 +920,8 @@
   const startManual = reduceMotion || !swarm || deepLink || scrollY > 80;
   if (!startManual && document.hidden) introPausedAt = performance.now();
   if (!startManual) {
-    try { introAvailable = !!particleIntro?.begin(introStart, 3090); }
-    catch { introAvailable = false; }
+    // Native headline construction starts on the first animation frame.
+    introAvailable = false;
   }
   addEventListener('pageshow', e => {
     if (e.persisted && phase === 'intro') exploreFreely();
