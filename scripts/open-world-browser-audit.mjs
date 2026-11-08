@@ -13,6 +13,14 @@ for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['web
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});page.on('requestfailed',r=>errors.push('request failed: '+r.url()+' '+r.failure()?.errorText));
   await page.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
   if(!(await page.title()).includes('Ravi M.'))throw new Error('Portfolio title is missing');
+  const webglAvailable=await page.evaluate(()=>{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'));});
+  if(!webglAvailable){
+   await page.goto(base+'?view=2d',{waitUntil:'domcontentloaded',timeout:30000});
+   if(!(await page.getByText('Ideas into').first().isVisible()))throw new Error('2D accessible version did not render without WebGL');
+   await page.screenshot({path:`${out}/${name}-2d-fallback.png`,fullPage:true});
+   console.log(name+': PASS (WebGL unavailable; 2D fallback verified)');
+   continue;
+  }
   const start=page.getByRole('button',{name:/START EXPLORING/i});
   await start.waitFor({state:'visible',timeout:20000});
   await page.screenshot({path:`${out}/${name}-intro.png`,fullPage:false});
