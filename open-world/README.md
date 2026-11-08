@@ -47,7 +47,7 @@ The first pass uses procedural meshes, instanced-ready scene groupings, adaptive
 
 ## Deployment
 
-The repository's current Cloudflare Worker packager reads `public/`. Build first, then package/deploy to the separate `rm-portfolio-world-preview` Worker. Production `main` and the existing portfolio Worker remain untouched until visual and browser QA passes.
+The isolated preview Worker removes GitHub Raw's restrictive `Content-Security-Policy` response header before serving the built assets; without this, browsers refuse to execute the app and display a blank page. The repository's current Cloudflare Worker packager reads `public/`. Build first, then package/deploy to the separate `rm-portfolio-world-preview` Worker. Production `main` and the existing portfolio Worker remain untouched until visual and browser QA passes.
 
 
 ## SEO, OG image and analytics
