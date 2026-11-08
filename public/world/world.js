@@ -10,14 +10,14 @@ const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v);};
 const lerp=(a,b,t)=>a+(b-a)*t;
 let autoPlaying=!reducedMotion,manualMode=false,autoStart=performance.now(),currentProgress=0,lastFrame=performance.now(),lastCaption=-1,visible=true,world=null;
-const rideDuration=16000;
+const rideDuration=14000;
 function setFallback(reason){
  fallback.hidden=false;canvas.style.display='none';loading.style.opacity='0';
  document.documentElement.dataset.worldRenderer='fallback';window.__WORLD_FAILED__=String(reason||'3D renderer unavailable');
  window.__WORLD_READY__=true;toggleButton.disabled=true;replayButton.disabled=true;
 }
 function setCaption(progress){
- const index=progress<.31?0:progress<.72?1:2;if(index===lastCaption)return;lastCaption=index;
+ const index=progress<.22?0:progress<.52?1:2;if(index===lastCaption)return;lastCaption=index;
  const captions=[
  ['01 / THE CITY','Ideas in<br>motion<span>.</span>','A little curiosity can take you a long way.<br>Welcome to my world.'],
  ['02 / THE PROJECTS','Experiments.<br>Made real<span>.</span>','ChemLab, Reframe, BrandSpool and AI Discovery — ideas shaped into working experiences.'],
@@ -190,9 +190,9 @@ function initWorld(THREE){
   wheels.forEach(w=>{w.rotation.x=-progress*155/.47;});
   const intro=smooth(progress/.14),mobile=innerWidth<700,followX=state.rideX+(mobile?1.25:2.35)+Math.sin(progress*5.2)*.32;
   const followY=mobile?4.25:4.75,followZ=state.rideZ+(mobile?8.4:10.3);
-  const harbour=smooth((progress-.42)/.33);
-  const harbourX=mobile?45:47,harbourY=mobile?21:17,harbourZ=-166;
-  const harbourLookX=30,harbourLookY=6.8,harbourLookZ=-192;
+  const harbour=smooth((progress-.16)/.34);
+  const harbourX=mobile?34:37,harbourY=mobile?17:15,harbourZ=-158;
+  const harbourLookX=30,harbourLookY=7.2,harbourLookZ=-192;
   desiredCamera.set(lerp(lerp(17,followX,intro),harbourX,harbour),lerp(lerp(13,followY,intro),harbourY,harbour),lerp(lerp(23,followZ,intro),harbourZ,harbour));
   desiredLook.set(lerp(lerp(0,state.rideX,intro),harbourLookX,harbour),lerp(lerp(3.2,1.55,intro),harbourLookY,harbour),lerp(lerp(-48,state.rideZ-8,intro),harbourLookZ,harbour));
   const ease=1-Math.exp(-Math.max(.001,delta)*4.2);camera.position.lerp(desiredCamera,ease);currentLook.lerp(desiredLook,ease);camera.lookAt(currentLook);
