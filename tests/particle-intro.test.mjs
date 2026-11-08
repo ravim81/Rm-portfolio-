@@ -48,12 +48,13 @@ function mockBrowser({reduced=false, width=960}={}) {
   return {window,layer,heading,canvases};
 }
 
-test('particle engine parses, is connected to the hero, and renders without a second animation loop',()=>{
+test('legacy particle engine remains independently valid but no longer doubles the hero title',()=>{
   assert.doesNotThrow(()=>new Script(source));
   assert.match(index,/src="particle-intro\.js" defer/);
   assert.ok(index.indexOf('particle-intro.js')<index.indexOf('build-story.js'));
-  assert.match(story,/createPortfolioParticleIntro/);
-  assert.match(story,/particleIntro\.draw\(now, agents\)/);
+  assert.match(story,/const particleIntro = null/);
+  assert.doesNotMatch(story,/particleIntro\.draw\(now, agents\)/);
+  assert.match(story,/renderHeroIntro\(elapsed\)/);
   assert.match(story,/handoffHero\(true\)/);
   assert.doesNotMatch(source,/requestAnimationFrame\(/);
 });
