@@ -454,3 +454,19 @@ body.agent-story-mode{background-color:#09090b}
     background:rgba(15,15,19,.94);
   }
 }
+
+/* Phase 1: exactly one semantic RAVI M title and one cursor-led reveal.
+   This mask is added before paint and cleared by the director or safety timer.
+   No duplicate text layer or particle copy is ever rendered. */
+html.hero-build-primed .hero h1 {
+  clip-path:inset(0 var(--hero-title-mask,100%) 0 0);
+  -webkit-clip-path:inset(0 var(--hero-title-mask,100%) 0 0);
+  will-change:clip-path;
+}
+@media (prefers-reduced-motion:reduce) {
+  html.hero-build-primed .hero h1 {
+    clip-path:none!important;
+    -webkit-clip-path:none!important;
+    will-change:auto;
+  }
+}
