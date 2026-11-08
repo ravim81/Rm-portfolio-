@@ -201,6 +201,11 @@ async function motionPass(browser,label,device) {
         return {
           readable:!!title && !title.classList.contains('build-pending') &&
             Number(getComputedStyle(title).opacity)>.8,
+          // One semantic element is masked exactly once; the old particle
+          // copy and repeated post-handoff title fade are not allowed.
+          titleMask:parseFloat(title?.style.getPropertyValue('--hero-title-mask')||'100'),
+          introPrimed:document.documentElement.classList.contains('hero-build-primed'),
+          introState:title?.dataset.introState,
           titleTop:rect?.top,titleBottom:rect?.bottom,
           portraitTop:portrait?.top,portraitBottom:portrait?.bottom,
           activeAgents:active.length,
@@ -210,8 +215,10 @@ async function motionPass(browser,label,device) {
           heroHeight:document.querySelector('.hero')?.getBoundingClientRect().height
         };
       });
-      assert(opening.readable,'mobile opening hides actual name: '+JSON.stringify(opening));
+      assert(opening.readable,'mobile opening hides underlying native heading: '+JSON.stringify(opening));
       assert(!opening.particlesVisible,'mobile intro particle cloud still covers wordmark');
+      assert(opening.introPrimed || ['complete','constructed'].includes(opening.introState),
+        'mobile title does not use a single controlled build: '+JSON.stringify(opening));
       assert(opening.activeAgents<=6,'mobile shows loose 23-cursor scatter: '+JSON.stringify(opening));
       assert(opening.heroHeight<=Math.max(750,opening.viewport)+32,
         'mobile hero reserves a huge empty region: '+JSON.stringify(opening));
@@ -231,12 +238,17 @@ async function motionPass(browser,label,device) {
     const active=await page.evaluate(()=>({
       caption:document.querySelector('.build-caption')?.textContent,
       headlineComplete:document.querySelector('.hero h1')?.classList.contains('build-complete'),
+      titleMask:document.querySelector('.hero h1')?.style.getPropertyValue('--hero-title-mask'),
+      introState:document.querySelector('.hero h1')?.dataset.introState,
+      primed:document.documentElement.classList.contains('hero-build-primed'),
       hiddenLetters:document.querySelectorAll('.kinetic-source-hidden').length,
       scrollY:window.scrollY,
       recovered:document.body.classList.contains('story-recovered')
     }));
     assert(!errors.length,'page errors: '+errors.join(' | '));
     assert(active.headlineComplete===true,'hero stuck pending after 4.8 seconds');
+    assert(active.introState==='complete' && active.primed===false,
+      'hero title construction did not finish once: '+JSON.stringify(active));
     assert(!active.recovered,'watchdog recovered rather than running animation');
     assert(active.caption!=='EXPLORE AT YOUR PACE','autoplay abandoned unexpectedly');
 
@@ -326,7 +338,9 @@ async function motionPass(browser,label,device) {
     await page.waitForFunction(()=>{
       const title=document.querySelector('.hero h1');
       const replay=document.querySelector('.build-replay');
-      return title?.classList.contains('build-pending') &&
+      return title?.classList.contains('build-complete') &&
+        document.documentElement.classList.contains('hero-build-primed') &&
+        Number.parseFloat(title.style.getPropertyValue('--hero-title-mask'))>=90 &&
         !replay?.disabled && document.querySelector('.build-pause')?.disabled===false;
     },null,{timeout:3000});
     assert(!errors.length,'replay JavaScript error: '+errors.join(' | '));
