@@ -54,7 +54,7 @@ export default function App() {
   return <main className="game-shell">
     {!started && <div className="intro-screen"><div className="intro-grid"/><div className="intro-top"><span>{content.identity.name.toUpperCase()} / {content.ui.introBrand}</span><span>{content.ui.experienceLabel}</span></div><div className="intro-copy"><p className="eyebrow">{content.intro.eyebrow}</p><h1>{content.intro.title}</h1><p>{content.intro.subtitle}</p><button className="button button-primary" onClick={()=>{setStarted(true);setPaused(false);}}>{content.intro.startLabel}<span>↗</span></button></div><div className="intro-bottom"><span>{content.ui.experienceLabel}</span><span>{content.ui.desktopLabel}</span></div></div>}
     <div className="world-viewport" style={{visibility:'visible'}}>
-      <Canvas shadows dpr={[1,1.6]} camera={{position:[0,5,10],fov:52}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#9bc6d7');}}>
+      <Canvas fallback={<div className="renderer-fallback">3D rendering is unavailable in this browser. <a href="/world/?view=2d">Open the 2D portfolio ↗</a></div>} shadows dpr={[1,1.6]} camera={{position:[0,5,10],fov:52}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#9bc6d7');}}>
         <Suspense fallback={<IntroScene/>}>{started?<World started={started} paused={paused} stick={stick} onZoneChange={onZoneChange} onProject={setModal}/>:<IntroScene/>}</Suspense><EffectComposer multisampling={0}><Bloom intensity={.45} luminanceThreshold={.72} mipmapBlur/><Vignette eskil={false} offset={.16} darkness={.38}/></EffectComposer><AdaptiveDpr pixelated/><Preload all/>
       </Canvas>
     </div>

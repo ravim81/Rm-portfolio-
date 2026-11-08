@@ -18,3 +18,5 @@
 .world-contact-screen input,.world-contact-screen textarea{min-width:0;padding:8px;border:1px solid #ffffff35;background:#ffffff0d;color:#fff;font:10px 'DM Mono',monospace}
 .world-contact-screen textarea{grid-column:1/-1;min-height:55px;resize:vertical}
 .world-contact-screen button{grid-column:1/-1;padding:10px;border:0;background:#ff8068;color:#18212a;font:10px 'DM Mono',monospace;letter-spacing:1px}
+
+.renderer-fallback{position:absolute;inset:0;display:grid;place-content:center;gap:14px;text-align:center;padding:28px;background:linear-gradient(145deg,#a4bfca,#273949 70%,#101722);color:#fff;font:13px 'DM Mono',monospace}.renderer-fallback a{color:#ff9b80;text-decoration:underline}
