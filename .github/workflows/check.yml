@@ -1,7 +1,7 @@
 name: Check portfolio
 on: [push, pull_request]
 permissions:
-  contents: read
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -13,6 +13,14 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run check
       - run: npm run build
+      - name: Publish built assets to isolated preview branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/world-redesign/open-world-react'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public/world
+          git commit -m "chore: publish open-world preview assets [skip ci]" || echo "No generated asset changes"
+          git push --force origin HEAD:refs/heads/world-preview-assets
       - name: Deploy isolated Cloudflare preview
         if: github.event_name == 'push' && github.ref == 'refs/heads/world-redesign/open-world-react'
         env:
