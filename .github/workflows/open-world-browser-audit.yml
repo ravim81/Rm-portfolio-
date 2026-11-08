@@ -25,6 +25,10 @@ jobs:
         run: npx vite preview --config open-world/vite.config.js --host 127.0.0.1 --port 4173 > /tmp/open-world-preview.log 2>&1 &
       - name: Run browser and responsive audit
         run: node scripts/open-world-browser-audit.mjs
+      - name: Audit deployed Cloudflare preview
+        env:
+          OPEN_WORLD_URL: https://rm-portfolio-world-preview.mallaravikumar9618.workers.dev/world/
+        run: node scripts/open-world-browser-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
