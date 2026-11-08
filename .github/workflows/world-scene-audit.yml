@@ -1,0 +1,17 @@
+name: World scene static checks
+on:
+  push:
+    branches: ["world-redesign/**"]
+    paths: ["public/world/**","tests/world-scene.test.mjs"]
+  pull_request:
+    paths: ["public/world/**","tests/world-scene.test.mjs"]
+  workflow_dispatch:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/world-scene.test.mjs
