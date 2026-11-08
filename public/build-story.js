@@ -930,6 +930,16 @@
     exploreFreely();
     controls.querySelector('.build-replay').disabled = reduceMotion;
     caption.textContent = reduceMotion ? 'REDUCED MOTION / MANUAL' : 'OPENED AT SECTION / MANUAL';
+  } else if (!document.documentElement.classList.contains(heroIntroClass)) {
+    // Slow script loading: the independent 5.5s safety timer may have already
+    // exposed the real headline. Never mask it again and repeat the opening.
+    // Move directly into the normal post-intro hold instead.
+    completeHeroTitle();
+    handoffHero(false);
+    phase = 'hold';
+    holdUntil = performance.now() + (compact ? 420 : 570);
+    caption.textContent = 'AUTOPLAY / 23 AGENTS';
+    schedule();
   } else {
     schedule();
   }
