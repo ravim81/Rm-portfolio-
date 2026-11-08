@@ -3,7 +3,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 const base=process.env.OPEN_WORLD_URL||'http://127.0.0.1:4173/world/';
 const out='test-results/open-world';
 await mkdir(out,{recursive:true});
-const failures=[];\nfor(let i=0;i<30;i++){try{const response=await fetch(base);if(response.ok)break;}catch{}await new Promise(r=>setTimeout(r,1000));}
+const failures=[];
+for(let i=0;i<30;i++){try{const response=await fetch(base);if(response.ok)break;}catch{}await new Promise(r=>setTimeout(r,1000));}
 for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['webkit',webkit]]){
  let browser;
  try{
