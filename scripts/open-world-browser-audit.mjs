@@ -24,7 +24,7 @@ for(const [name,browserType] of [['chromium',chromium],['firefox',firefox],['web
   const start=page.getByRole('button',{name:/START EXPLORING/i});
   await start.waitFor({state:'visible',timeout:20000});
   await page.screenshot({path:`${out}/${name}-intro.png`,fullPage:false});
-  await start.click();
+  await start.click({force:true});
   await page.locator('canvas').waitFor({state:'visible',timeout:20000});
   await page.waitForTimeout(3500);
   if(await page.locator('canvas').count()!==1)throw new Error('Expected one 3D canvas');
