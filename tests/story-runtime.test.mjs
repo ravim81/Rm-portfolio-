@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const story = await readFile(new URL('../public/build-story.js',import.meta.url),'utf8');
 const swarm = await readFile(new URL('../public/swarm-formation.js',import.meta.url),'utf8');
 
-function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=false}={}) {
+function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=false,primer=true}={}) {
   const events={},controls={},queue=[];
   for(const key of ['.build-caption','.build-pause','.build-replay','.build-manual']) {
     controls[key]={textContent:'',disabled:false,style:{},setAttribute() {},
@@ -66,7 +66,7 @@ function createRuntime({width=1200,reduced=false,kinetic=false,kineticThrows=fal
     hidden:false,
     body:{classList:{add(){},remove(){}},append(){}},
     documentElement:{scrollHeight:5500,classList:{
-      _set:new Set(['hero-build-primed']),
+      _set:new Set(primer?['hero-build-primed']:[]),
       add(v){this._set.add(v);},
       remove(v){this._set.delete(v);},
       contains(v){return this._set.has(v);}
@@ -199,4 +199,15 @@ test('mobile control touchstart does not cancel its own replay or pause action',
   assert.equal(app.controls['.build-caption'].textContent,'AUTOPLAY / 23 AGENTS');
   app.events.touchstart({target:{closest(){return null;}}});
   assert.equal(app.controls['.build-caption'].textContent,'EXPLORE AT YOUR PACE');
+});
+
+test('slow-loading script never hides and rebuilds an already visible wordmark',()=>{
+  const app=createRuntime({width:390,primer:false});
+  const heading=app.targets[0];
+  assert.ok(heading.classList.contains('build-complete'));
+  assert.equal(heading.dataset.introState,'complete');
+  app.advance(0,1700);
+  assert.equal(heading.dataset.introState,'complete');
+  assert.equal(heading.style.opacity,'1');
+  assert.notEqual(app.controls['.build-caption'].textContent,'CONSTRUCTING / RAVI M.');
 });
