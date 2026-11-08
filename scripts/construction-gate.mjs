@@ -48,6 +48,50 @@ for(const spec of scenarios){
   await page.addInitScript(()=>{window.__PORTFOLIO_AUDIT__=true;});
   page.on('pageerror',e=>result.errors.push(String(e)));
   await page.goto(url,{waitUntil:'load',timeout:45000});
+  // Phase 1 gate: sample the REAL native hero animation at three controlled
+  // times, before testing the four independent project scenes.
+  const heroFrames=[];
+  for(const [name,fraction] of [['arrival',.14],['building',.50],['finished',.94]]){
+    const shot=await page.evaluate(fraction=>{
+      const state=window.__portfolioAuditHero?.(fraction);
+      if(!state)return {missing:true};
+      const heading=document.querySelector('.hero h1');
+      const rect=heading.getBoundingClientRect();
+      const first=document.querySelector('.build-agent');
+      const lead=first?.getBoundingClientRect();
+      const cx=rect.left+rect.width*state.progress;
+      const cy=rect.top+rect.height*.51;
+      const particle=document.querySelector('.particle-intro-canvas');
+      return {
+        name:heading.textContent,
+        count:document.querySelectorAll('.hero h1').length,
+        state:state.state,
+        progress:state.progress,mask:Number.parseFloat(state.mask),
+        primed:document.documentElement.classList.contains('hero-build-primed'),
+        active:state.crew,
+        leadDistance:lead?Math.hypot(lead.left-cx,lead.top-cy):Infinity,
+        noParticle:!particle || getComputedStyle(particle).display==='none',
+        nativeVisible:!heading.classList.contains('build-pending') &&
+          Number(getComputedStyle(heading).opacity)>.8
+      };
+    },fraction);
+    assert(shot.count===1 && shot.nativeVisible && shot.noParticle,
+      spec.name+': duplicated or hidden hero wordmark '+JSON.stringify(shot));
+    assert(shot.active===(spec.width<=640?6:8) && shot.leadDistance<24,
+      spec.name+': cursor is not constructing the real title '+JSON.stringify(shot));
+    heroFrames.push({phase:name,...shot});
+    await page.screenshot({path:join(out,spec.name+'-hero-'+name+'.png'),animations:'allow'});
+  }
+  assert(heroFrames[0].mask>75 && heroFrames[0].primed,
+    spec.name+': title already visible before cursor arrival');
+  assert(heroFrames[1].mask>8 && heroFrames[1].mask<85 &&
+    heroFrames[1].progress>heroFrames[0].progress,
+    spec.name+': no progressive one-pass native text reveal');
+  assert(heroFrames[2].state==='complete' && heroFrames[2].mask===0 &&
+    !heroFrames[2].primed,
+    spec.name+': native title did not finish once');
+  result.hero=heroFrames;
+  console.log('HERO_INTRO_GATE',spec.name,JSON.stringify(heroFrames));
   for(const scene of scenes){
    // Seek production showWork() deterministically. Visual quality must not
    // depend on Chromium/WebKit CI runners hitting a narrow RAF interval.
