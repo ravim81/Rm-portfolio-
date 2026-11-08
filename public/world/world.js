@@ -21,7 +21,7 @@ function setCaption(progress){
  const captions=[
  ['01 / THE CITY','Ideas in<br>motion<span>.</span>','A little curiosity can take you a long way.<br>Welcome to my world.'],
  ['02 / THE PROJECTS','Experiments.<br>Made real<span>.</span>','ChemLab, Reframe, BrandSpool and AI Discovery — ideas shaped into working experiences.'],
- ['03 / THE JOURNEY','Make it<br>mean<br>something<span>.</span>','Every project starts with a question. The best ones become experiences.']
+ ['03 / THE WATERFRONT','Work in<br>motion<span>.</span>','The road opens onto a floating showcase — ideas moving from concept into real experiences.']
  ];
  captionKicker.textContent=captions[index][0];captionTitle.innerHTML=captions[index][1];captionBody.innerHTML=captions[index][2];
  hudIndex.innerHTML='0'+(index+1)+' <i>/ 03</i>';
@@ -114,7 +114,41 @@ function initWorld(THREE){
  makeBillboard(13.8,10.2,-118,9.4,4.7,'BRANDSPOOL','PRODUCT FILM STUDIO','#ff9b75');
  makeBillboard(-13.1,9.5,-149,9.2,4.6,'AI DISCOVERY','RESEARCH / EXPERIMENTS','#ff6572');
  const sun=new THREE.Mesh(new THREE.SphereGeometry(8.5,28,20),new THREE.MeshBasicMaterial({color:0xffc18f}));sun.position.set(58,32,-208);scene.add(sun);
+ 
  const sunGlow=new THREE.PointLight(0xff986e,16,100);sunGlow.position.copy(sun.position);scene.add(sunGlow);
+ // Waterfront chapter: the road opens onto a calm harbour and a lit project barge.
+ const waterMat=new THREE.MeshStandardMaterial({color:0x173746,roughness:.24,metalness:.42,transparent:true,opacity:.94});
+ addPlane(scene,150,180,waterMat,38,-.2,-210);
+ const waterLines=new THREE.Group();
+ for(let i=0;i<36;i++){
+  const z=-150-i*3.1,x=18+random()*43,w=2+random()*8;
+  const glint=new THREE.Mesh(new THREE.BoxGeometry(w,.018,.035),new THREE.MeshBasicMaterial({color:i%3===0?0x83b9c1:0x557f8d,transparent:true,opacity:.24+random()*.2}));
+  glint.position.set(x,-.08,z);waterLines.add(glint);
+ }
+ scene.add(waterLines);
+ const barge=new THREE.Group(),hullMat=mat(0x17232d,.42,.68),deckMat=mat(0x39434a,.72,.32);
+ addBox(barge,27,2.2,11,hullMat,0,1.05,0);
+ addBox(barge,24,.24,9,deckMat,0,2.25,0);
+ addBox(barge,2.6,1.5,3.2,mat(0x27333c,.65,.22),-9,3.05,-1.7);
+ for(let i=0;i<8;i++)addBox(barge,.12,.16,8.5,mat(0x8b9aa0,.38,.65),-11.2+i*3.2,2.48,0);
+ const railMat=mat(0x82939a,.4,.72);
+ for(const side of [-1,1])for(let i=0;i<13;i++){
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.7,6),railMat);post.position.set(-11.5+i*1.9,2.78,side*4.35);barge.add(post);
+ }
+ addBox(barge,25,.12,.12,railMat,0,3.08,4.35);addBox(barge,25,.12,.12,railMat,0,3.08,-4.35);
+ const bargeLamp=mat(0xffb88e,.3,.1,{emissive:0xff754f,emissiveIntensity:1.4});
+ for(let i=0;i<9;i++){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),bargeLamp);lamp.position.set(-10+i*2.5,3.2,4.3);barge.add(lamp);}
+ barge.position.set(35,0,-211);scene.add(barge);
+ makeBillboard(35,9.2,-211,20,8.8,'WORK / IN MOTION','A FLOATING SHOWCASE OF IDEAS','#ff795f');
+ makeBillboard(22,5.5,-202,7.2,3.6,'DESIGN','THOUGHTFUL BY DEFAULT','#ff9c79');
+ makeBillboard(48,5.5,-220,7.2,3.6,'BUILD','MADE TO BE USED','#ff6c78');
+ const harbourLights=new THREE.Group();
+ for(let i=0;i<14;i++){
+  const x=17+i*3.2,z=-174-(i%3)*17;
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.055,4.5,6),railMat);pole.position.set(x,2.25,z);harbourLights.add(pole);
+  const glow=new THREE.PointLight(0xff9f79,1.8,12);glow.position.set(x,4.6,z);harbourLights.add(glow);
+ }
+ scene.add(harbourLights);
  function cylinderBetween(parent,a,b,r,material,segments){
   const start=new THREE.Vector3(a[0],a[1],a[2]),end=new THREE.Vector3(b[0],b[1],b[2]),dir=new THREE.Vector3().subVectors(end,start),length=dir.length();
   const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r*.82,r,length,segments||8),material);mesh.position.copy(start).add(end).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());mesh.castShadow=renderer.shadowMap.enabled;parent.add(mesh);return mesh;
@@ -156,8 +190,11 @@ function initWorld(THREE){
   wheels.forEach(w=>{w.rotation.x=-progress*155/.47;});
   const intro=smooth(progress/.14),mobile=innerWidth<700,followX=state.rideX+(mobile?1.25:2.35)+Math.sin(progress*5.2)*.32;
   const followY=mobile?4.25:4.75,followZ=state.rideZ+(mobile?8.4:10.3);
-  desiredCamera.set(lerp(17,followX,intro),lerp(13,followY,intro),lerp(23,followZ,intro));
-  desiredLook.set(lerp(0,state.rideX,intro),lerp(3.2,1.55,intro),lerp(-48,state.rideZ-8,intro));
+  const harbour=smooth((progress-.68)/.32);
+  const harbourX=mobile?53:57,harbourY=mobile?24:19,harbourZ=-185;
+  const harbourLookX=35,harbourLookY=6.4,harbourLookZ=-211;
+  desiredCamera.set(lerp(lerp(17,followX,intro),harbourX,harbour),lerp(lerp(13,followY,intro),harbourY,harbour),lerp(lerp(23,followZ,intro),harbourZ,harbour));
+  desiredLook.set(lerp(lerp(0,state.rideX,intro),harbourLookX,harbour),lerp(lerp(3.2,1.55,intro),harbourLookY,harbour),lerp(lerp(-48,state.rideZ-8,intro),harbourLookZ,harbour));
   const ease=1-Math.exp(-Math.max(.001,delta)*4.2);camera.position.lerp(desiredCamera,ease);currentLook.lerp(desiredLook,ease);camera.lookAt(currentLook);
   setCaption(progress);progressBar.style.transform='scaleX('+progress.toFixed(4)+')';hudCoordinates.textContent='CITY · '+(progress*1.8).toFixed(1)+' KM';
  }
