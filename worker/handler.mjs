@@ -3,7 +3,7 @@ export function createHandler(files, revision) {
     const headers = new Headers({'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','X-Source-Revision':revision});
     if (!['GET','HEAD'].includes(request.method)) {headers.set('Allow','GET, HEAD');return new Response('Method not allowed',{status:405,headers});}
     let path; try {path=decodeURIComponent(new URL(request.url).pathname);} catch {return new Response('Bad request',{status:400,headers});}
-    if(path==='/')path='/index.html';
+    if(path==='/')path='/world/index.html';
     const file=files.get(path);
     if(!file)return new Response(request.method==='HEAD'?null:'Not found',{status:404,headers});
     headers.set('Content-Type',file.type);headers.set('ETag',file.etag);
