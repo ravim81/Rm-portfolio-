@@ -20,7 +20,7 @@ function setCaption(progress){
  const index=progress<.31?0:progress<.72?1:2;if(index===lastCaption)return;lastCaption=index;
  const captions=[
  ['01 / THE CITY','Ideas in<br>motion<span>.</span>','A little curiosity can take you a long way.<br>Welcome to my world.'],
- ['02 / THE CRAFT','Curiosity.<br>Built into<br>craft<span>.</span>','Design, technology and a willingness to explore what comes next.'],
+ ['02 / THE PROJECTS','Experiments.<br>Made real<span>.</span>','ChemLab, Reframe, BrandSpool and AI Discovery — ideas shaped into working experiences.'],
  ['03 / THE JOURNEY','Make it<br>mean<br>something<span>.</span>','Every project starts with a question. The best ones become experiences.']
  ];
  captionKicker.textContent=captions[index][0];captionTitle.innerHTML=captions[index][1];captionBody.innerHTML=captions[index][2];
@@ -108,8 +108,11 @@ function initWorld(THREE){
   const screen=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture}));screen.position.z=.19;group.add(screen);
   const glow=new THREE.PointLight(new THREE.Color(accent),5,18);glow.position.set(0,0,1.2);group.add(glow);group.position.set(x,y,z);scene.add(group);
  }
- makeBillboard(-13.1,9.5,-42,9.2,4.6,'RAVI M.','IDEAS INTO EXPERIENCES','#ff6572');
- makeBillboard(13.8,10.2,-117,9.4,4.7,'BUILD WHAT','YOU WISH EXISTED','#ff9b75');
+ makeBillboard(-13.1,9.5,-25,9.2,4.6,'RAVI M.','IDEAS INTO EXPERIENCES','#ff6572');
+ makeBillboard(13.8,10.2,-56,9.4,4.7,'CHEMLAB','VIRTUAL CHEMISTRY LAB','#ff9b75');
+ makeBillboard(-13.1,9.5,-87,9.2,4.6,'REFRAME','WEBSITE REDESIGN ENGINE','#ff6572');
+ makeBillboard(13.8,10.2,-118,9.4,4.7,'BRANDSPOOL','PRODUCT FILM STUDIO','#ff9b75');
+ makeBillboard(-13.1,9.5,-149,9.2,4.6,'AI DISCOVERY','RESEARCH / EXPERIMENTS','#ff6572');
  const sun=new THREE.Mesh(new THREE.SphereGeometry(8.5,28,20),new THREE.MeshBasicMaterial({color:0xffc18f}));sun.position.set(58,32,-208);scene.add(sun);
  const sunGlow=new THREE.PointLight(0xff986e,16,100);sunGlow.position.copy(sun.position);scene.add(sunGlow);
  function cylinderBetween(parent,a,b,r,material,segments){
@@ -164,7 +167,7 @@ function initWorld(THREE){
   else if(manualMode)currentProgress=manualProgress();
   updateScene(currentProgress,delta);renderer.render(scene,camera);
  }
- window.__WORLD_READY__=true;window.__WORLD_DIAGNOSTICS__={renderer:'webgl',objects:scene.children.length,buildings:38,billboardCount:2,rider:true,motorcycle:true,instancedWindows:warmMatrices.length+coolMatrices.length+darkMatrices.length};
+ window.__WORLD_READY__=true;window.__WORLD_DIAGNOSTICS__={renderer:'webgl',objects:scene.children.length,buildings:38,billboardCount:5,projectBillboards:4,rider:true,motorcycle:true,instancedWindows:warmMatrices.length+coolMatrices.length+darkMatrices.length};
  document.documentElement.dataset.worldRenderer='webgl';loading.style.opacity='0';setTimeout(()=>{loading.hidden=true;},500);
  world={get progress(){return currentProgress;}};window.__WORLD_APP__={get progress(){return currentProgress;},get autoPlaying(){return autoPlaying;},get diagnostics(){return window.__WORLD_DIAGNOSTICS__;}};
  updateControls();requestAnimationFrame(animate);
