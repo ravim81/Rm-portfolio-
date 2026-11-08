@@ -1,0 +1,34 @@
+name: Open world browser and device audit
+on:
+  workflow_dispatch:
+  push:
+    branches: ["world-redesign/**"]
+    paths: ["open-world/**","package.json","scripts/open-world-browser-audit.mjs",".github/workflows/open-world-browser-audit.yml","worker/handler.mjs"]
+  pull_request:
+    paths: ["open-world/**","package.json","scripts/open-world-browser-audit.mjs",".github/workflows/open-world-browser-audit.yml","worker/handler.mjs"]
+permissions:
+  contents: read
+jobs:
+  browser-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - name: Start local preview
+        run: npx vite preview --config open-world/vite.config.js --host 127.0.0.1 --port 4173 > /tmp/open-world-preview.log 2>&1 &
+      - name: Run browser and responsive audit
+        run: node scripts/open-world-browser-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: open-world-browser-audit
+          path: test-results/open-world/
+          retention-days: 7
+          if-no-files-found: warn

@@ -1,1 +1,4 @@
-export default { plugins: { tailwindcss: {}, autoprefixer: {} } };
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.dirname(fileURLToPath(import.meta.url));
+export default { plugins:{ tailwindcss:{config:path.join(root,'tailwind.config.js')}, autoprefixer:{} } };

@@ -1,11 +1,11 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { AdaptiveDpr, Preload, useProgress } from '@react-three/drei';
-import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { gsap } from 'gsap';
 import content from '../content.json';
-import World from '../world/World.jsx';
+import IntroScene from '../world/IntroScene.jsx';
+const World = React.lazy(() => import('../world/World.jsx'));
 
 function Loader({ onReady }) {
   const { progress, active } = useProgress();
@@ -41,7 +41,7 @@ function TouchPad({ onChange }) {
   return <div className="touch-pad" onPointerDown={e=>{active.current=true;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop}><span className="touch-stick">●</span><small>STEER</small></div>;
 }
 function TwoDVersion() {
-  return <main className="two-d"><nav><b>RAVI M.</b><a href="#work">WORK</a><a href="#skills">SKILLS</a><a href="#contact">CONTACT</a></nav><header><p className="eyebrow">INDEPENDENT BUILDER · INDIA</p><h1>Ideas into<br/><em>experiences.</em></h1><p>{content.identity.intro}</p></header><section id="work"><p className="eyebrow">SELECTED SERVICES</p><div className="two-grid">{content.services.map(s=><article key={s.id}><span>{s.id.toUpperCase()}</span><h2>{s.title}</h2><p>{s.description}</p></article>)}</div></section><section id="skills"><p className="eyebrow">CAPABILITIES</p>{content.skills.map(g=><div key={g.group}><h2>{g.group}</h2><p>{g.items.map(x=>x.name).join(' · ')}</p></div>)}</section><section id="contact"><p className="eyebrow">START A CONVERSATION</p><h2>Have a good idea?</h2><a href={`mailto:${content.contact.email}`}>{content.contact.email}</a></section><a className="back-world" href="/world/">RETURN TO 3D WORLD ↗</a></main>;
+  return <main className="two-d"><nav><b>RAVI M.</b><a href="#work">WORK</a><a href="#skills">SKILLS</a><a href="#contact">CONTACT</a></nav><header><p className="eyebrow">INDEPENDENT BUILDER · INDIA</p><h1>Ideas into<br/><em>experiences.</em></h1><p>{content.identity.intro}</p></header><section id="work"><p className="eyebrow">{content.ui.selectedServices}</p><div className="two-grid">{content.services.map(s=><article key={s.id}><span>{s.id.toUpperCase()}</span><h2>{s.title}</h2><p>{s.description}</p></article>)}</div></section><section id="skills"><p className="eyebrow">{content.ui.capabilities}</p>{content.skills.map(g=><div key={g.group}><h2>{g.group}</h2><p>{g.items.map(x=>x.name).join(' · ')}</p></div>)}</section><section id="contact"><p className="eyebrow">{content.ui.startConversation}</p><h2>{content.ui.contactQuestion}</h2><a href={`mailto:${content.contact.email}`}>{content.contact.email}</a></section><a className="back-world" href="/world/">{content.ui.return3d}</a></main>;
 }
 export default function App() {
   const [started,setStarted]=useState(false),[ready,setReady]=useState(false),[zone,setZone]=useState(0),[modal,setModal]=useState(null),[stick,setStick]=useState({x:0,y:0}),[flash,setFlash]=useState(false);
@@ -55,7 +55,7 @@ export default function App() {
     {!started && <div className="intro-screen"><div className="intro-grid"/><div className="intro-top"><span>{content.identity.name.toUpperCase()} / {content.ui.introBrand}</span><span>{content.ui.experienceLabel}</span></div><div className="intro-copy"><p className="eyebrow">{content.intro.eyebrow}</p><h1>{content.intro.title}</h1><p>{content.intro.subtitle}</p><button className="button button-primary" onClick={()=>{setStarted(true);setPaused(false);}}>{content.intro.startLabel}<span>↗</span></button></div><div className="intro-bottom"><span>{content.ui.experienceLabel}</span><span>{content.ui.desktopLabel}</span></div></div>}
     <div className="world-viewport" style={{visibility:'visible'}}>
       <Canvas shadows dpr={[1,1.6]} camera={{position:[0,5,10],fov:52}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#9bc6d7');}}>
-        <Suspense fallback={null}><Physics gravity={[0,-9.81,0]} timeStep="vary"><World started={started} paused={paused} stick={stick} onZoneChange={onZoneChange} onProject={setModal}/></Physics><EffectComposer multisampling={0}><Bloom intensity={.45} luminanceThreshold={.72} mipmapBlur/><Vignette eskil={false} offset={.16} darkness={.38}/></EffectComposer><AdaptiveDpr pixelated/><Preload all/></Suspense>
+        <Suspense fallback={<IntroScene/>}>{started?<World started={started} paused={paused} stick={stick} onZoneChange={onZoneChange} onProject={setModal}/>:<IntroScene/>}</Suspense><EffectComposer multisampling={0}><Bloom intensity={.45} luminanceThreshold={.72} mipmapBlur/><Vignette eskil={false} offset={.16} darkness={.38}/></EffectComposer><AdaptiveDpr pixelated/><Preload all/>
       </Canvas>
     </div>
     {started && <>

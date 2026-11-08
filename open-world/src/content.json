@@ -192,6 +192,13 @@
     "replayLabel": "REPLAY",
     "soundLabel": "SOUND",
     "modeLabel": "THIRD-PERSON EXPLORATION",
-    "introBrand": "PORTFOLIO"
+    "introBrand": "PORTFOLIO",
+    "billboardBrandline": "RAVI M. / INDEPENDENT BUILDER",
+    "billboardFooter": "IDEAS / DESIGN / TECHNOLOGY / EXPERIMENTS",
+    "selectedServices": "SELECTED SERVICES",
+    "capabilities": "CAPABILITIES",
+    "startConversation": "START A CONVERSATION",
+    "contactQuestion": "Have a good idea?",
+    "return3d": "RETURN TO 3D WORLD ↗"
   }
 }

@@ -48,3 +48,12 @@ The first pass uses procedural meshes, instanced-ready scene groupings, adaptive
 ## Deployment
 
 The repository's current Cloudflare Worker packager reads `public/`. Build first, then package/deploy to the separate `rm-portfolio-world-preview` Worker. Production `main` and the existing portfolio Worker remain untouched until visual and browser QA passes.
+
+
+## SEO, OG image and analytics
+
+The preview includes an Open Graph / Twitter card image at `/world/og-image.svg`. Cloudflare Web Analytics is optional: copy `.env.example` to `.env.local`, set `VITE_CF_WEB_ANALYTICS_TOKEN`, and rebuild. No analytics script is loaded without a token.
+
+## Browser QA
+
+Run `npm install --no-audit --no-fund`, `npm run build`, then `npm install --no-save playwright@1.56.1`, install Playwright browsers and run `npm run audit:open-world`. The GitHub Actions browser matrix performs Chromium, Firefox and WebKit checks and stores screenshots as an artifact.
