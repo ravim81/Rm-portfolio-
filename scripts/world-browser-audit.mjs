@@ -9,7 +9,7 @@ await mkdir(out,{recursive:true});
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
 const server=createServer(async(req,res)=>{try{const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=resolve(root,'.'+(p==='/'?'/index.html':p));if(file!==root&&!file.startsWith(root+'/')){res.writeHead(403).end();return;}const data=await readFile(file);res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream','cache-control':'no-store'});res.end(req.method==='HEAD'?undefined:data);}catch{res.writeHead(404).end('Not found');}});
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
-const url='http://127.0.0.1:'+server.address().port+'/';
+const url=process.env.WORLD_PREVIEW_URL || 'http://127.0.0.1:'+server.address().port+'/';
 const devices=[['small-phone',320,640,true],['android-portrait',390,844,true],['phone-landscape',844,390,true],['tablet-portrait',820,1180,true],['laptop',1280,800,false],['desktop',1920,1080,false]];
 const browsers=[['Chromium',chromium],['Firefox',firefox],['WebKit',webkit]];
 const report={url,startedAt:new Date().toISOString(),passed:0,failed:0,results:[]};

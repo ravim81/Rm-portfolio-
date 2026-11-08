@@ -19,7 +19,10 @@ jobs:
           node-version: "22"
       - run: npm install --no-save playwright@1.56.1
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: node scripts/world-browser-audit.mjs
+      - name: Audit isolated Cloudflare preview
+        env:
+          WORLD_PREVIEW_URL: https://rm-portfolio-world-preview.mallaravikumar9618.workers.dev/
+        run: node scripts/world-browser-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
